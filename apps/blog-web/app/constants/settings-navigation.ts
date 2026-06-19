@@ -1,0 +1,92 @@
+export const settingsNavigationItems = [
+  {
+    label: "Vue d'ensemble",
+    to: "/settings",
+    icon: "i-lucide-settings-2",
+    description: "Accès rapide aux réglages principaux.",
+  },
+  {
+    label: "Profil connecté",
+    to: "/settings/profile",
+    icon: "i-lucide-user-round",
+    description: "Consulter la session Supabase active.",
+  },
+  {
+    label: "Connexions",
+    to: "/settings/connections",
+    icon: "i-lucide-plug-zap",
+    description: "Vérifier les intégrations actives.",
+  },
+  {
+    label: "Positionnement",
+    to: "/settings/business-positioning",
+    icon: "i-lucide-target",
+    description: "Définir l'offre, les différenciateurs et les problèmes.",
+  },
+  {
+    label: "Shopify",
+    to: "/settings/shopify",
+    icon: "i-lucide-store",
+    description: "Synchroniser les réglages Shopify.",
+  },
+  {
+    label: "Auteurs",
+    to: "/settings/authors",
+    icon: "i-lucide-users",
+    description: "Gérer les auteurs Magify.",
+  },
+  {
+    label: "Niveaux difficulté",
+    to: "/settings/keyword-difficulty-levels",
+    icon: "i-lucide-gauge",
+    description: "Configurer les labels de difficulté SEO.",
+  },
+  {
+    label: "Seuils volume",
+    to: "/settings/keyword-volume-thresholds",
+    icon: "i-lucide-chart-column-big",
+    description: "Définir faible, moyen et fort volume.",
+  },
+  {
+    label: "Prompts IA",
+    to: "/settings/ai-prompts",
+    icon: "i-lucide-sparkles",
+    description: "Configurer les prompts métier.",
+  },
+  {
+    label: "Catégories problèmes",
+    to: "/settings/customer-problem-categories",
+    icon: "i-lucide-folder-kanban",
+    description: "Organiser les catégories de problèmes clients.",
+  },
+  {
+    label: "Maintenance",
+    to: "/settings/trash",
+    icon: "i-lucide-trash-2",
+    description: "Vider la corbeille et purger les tables.",
+  },
+  {
+    label: "Actions",
+    to: "/settings/actions",
+    icon: "i-lucide-wrench",
+    description: "Lancer les opérations de maintenance et de recalcul.",
+  },
+  {
+    label: "Stats IA",
+    to: "/settings/stats",
+    icon: "i-lucide-chart-column",
+    description: "Suivre l'usage des tokens OpenAI par type de prompt.",
+  },
+  {
+    label: "Environnements",
+    to: "/settings/environment",
+    icon: "i-lucide-terminal-square",
+    description: "Consulter les variables d'environnement Nuxt et API.",
+  },
+  {
+    label: "Cache OpenAI",
+    to: "/settings/openai-cache",
+    icon: "i-lucide-database-zap",
+    description: "Inspecter les appels OpenAI mis en cache et leurs sorties.",
+  },
+] as const;

@@ -1,0 +1,45 @@
+export type ChatGptModelOption = {
+  value: string;
+  label: string;
+  deprecated?: boolean;
+};
+
+export const keywordAnalysisModelOptions: ChatGptModelOption[] = [
+  { value: "gpt-5.2", label: "GPT-5.2" },
+  { value: "gpt-5.2-pro", label: "GPT-5.2 pro" },
+  { value: "gpt-5.1", label: "GPT-5.1" },
+  { value: "gpt-5.1-codex", label: "GPT-5.1 Codex" },
+  { value: "gpt-5.1-codex-max", label: "GPT-5.1-Codex-Max" },
+  { value: "gpt-5", label: "GPT-5" },
+  { value: "gpt-5-codex", label: "GPT-5-Codex" },
+  { value: "gpt-5-mini", label: "GPT-5 mini" },
+  { value: "gpt-5-nano", label: "GPT-5 nano" },
+  { value: "gpt-4.1", label: "GPT-4.1" },
+  { value: "gpt-4.1-mini", label: "GPT-4.1 mini" },
+  { value: "gpt-4.1-nano", label: "GPT-4.1 nano" },
+  { value: "gpt-4o", label: "GPT-4o" },
+  { value: "gpt-4o-mini", label: "GPT-4o mini" },
+  { value: "gpt-4o-search-preview", label: "GPT-4o Search Preview" },
+  { value: "gpt-4o-mini-search-preview", label: "GPT-4o mini Search Preview" },
+  { value: "gpt-4o-realtime", label: "GPT-4o Realtime" },
+  { value: "gpt-4o-mini-realtime", label: "GPT-4o mini Realtime" },
+  { value: "gpt-4o-transcribe", label: "GPT-4o Transcribe" },
+  { value: "gpt-4o-transcribe-diarize", label: "GPT-4o Transcribe Diarize" },
+  { value: "gpt-4o-mini-transcribe", label: "GPT-4o mini Transcribe" },
+  { value: "gpt-4o-mini-tts", label: "GPT-4o mini TTS" },
+  { value: "gpt-4o-audio", label: "GPT-4o Audio" },
+  { value: "gpt-4o-mini-audio", label: "GPT-4o mini Audio" },
+  { value: "o3", label: "o3" },
+  { value: "o3-pro", label: "o3-pro" },
+  { value: "o3-mini", label: "o3-mini" },
+  { value: "o4-mini", label: "o4-mini" },
+  { value: "o1", label: "o1" },
+  { value: "o1-pro", label: "o1-pro" },
+  { value: "o1-mini", label: "o1-mini" },
+  { value: "o1-preview", label: "o1 Preview", deprecated: true },
+  { value: "gpt-4.5-preview", label: "GPT-4.5 Preview", deprecated: true },
+  { value: "gpt-4", label: "GPT-4", deprecated: true },
+  { value: "gpt-4-turbo", label: "GPT-4 Turbo", deprecated: true },
+  { value: "gpt-3.5-turbo", label: "GPT-3.5 Turbo", deprecated: true },
+  { value: "chatgpt-4o", label: "ChatGPT-4o" },
+] as const;

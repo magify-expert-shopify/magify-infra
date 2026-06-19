@@ -1,0 +1,79 @@
+services:
+  blog-api:
+    image: ghcr.io/TON_USER/blog-api:prod
+    container_name: blog-api
+    restart: unless-stopped
+    env_file:
+      - .env.prod
+    environment:
+      APP_NAME: blog
+      PORT: 30000
+    networks:
+      - magify-network
+
+  blog-web:
+    image: ghcr.io/TON_USER/blog-web:prod
+    container_name: blog-web
+    restart: unless-stopped
+    env_file:
+      - .env.prod
+    environment:
+      NUXT_HOST: 0.0.0.0
+      NUXT_PORT: 30000
+      NUXT_PUBLIC_API_BASE: http://blog.magify.local
+    networks:
+      - magify-network
+
+  prospection-api:
+    image: ghcr.io/TON_USER/prospection-api:prod
+    container_name: prospection-api
+    restart: unless-stopped
+    env_file:
+      - .env.prod
+    environment:
+      APP_NAME: prospection
+      PORT: 30000
+    networks:
+      - magify-network
+
+  prospection-web:
+    image: ghcr.io/TON_USER/prospection-web:prod
+    container_name: prospection-web
+    restart: unless-stopped
+    env_file:
+      - .env.prod
+    environment:
+      NUXT_HOST: 0.0.0.0
+      NUXT_PORT: 30000
+      NUXT_PUBLIC_API_BASE: http://prospection.magify.local
+    networks:
+      - magify-network
+
+  social-api:
+    image: ghcr.io/TON_USER/social-api:prod
+    container_name: social-api
+    restart: unless-stopped
+    env_file:
+      - .env.prod
+    environment:
+      APP_NAME: social
+      PORT: 30000
+    networks:
+      - magify-network
+
+  social-web:
+    image: ghcr.io/TON_USER/social-web:prod
+    container_name: social-web
+    restart: unless-stopped
+    env_file:
+      - .env.prod
+    environment:
+      NUXT_HOST: 0.0.0.0
+      NUXT_PORT: 30000
+      NUXT_PUBLIC_API_BASE: http://social.magify.local
+    networks:
+      - magify-network
+
+networks:
+  magify-network:
+    external: true

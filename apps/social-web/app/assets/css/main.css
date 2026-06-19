@@ -1,0 +1,22 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap");
+@import "tailwindcss";
+@import "@nuxt/ui";
+
+@theme static {
+  --color-background: #f6f6f9;
+  --color-primary-50: #f3efff;
+  --color-primary-100: #e6ddff;
+  --color-primary-200: #d0c0ff;
+  --color-primary-300: #b39cff;
+  --color-primary-400: #8c6fff;
+  --color-primary-500: #5c3fde;
+  --color-primary-600: #5134cc;
+  --color-primary-700: #4529b3;
+  --color-primary-800: #37208f;
+  --color-primary-900: #2b196f;
+  --color-primary-950: #1d1147;
+}
+
+:root {
+  --ui-primary: #5c3fde;
+}

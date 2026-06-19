@@ -1,0 +1,238 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider     = "prisma-client"
+  output       = "../generated/prisma"
+  moduleFormat = "cjs"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum ProspectStatus {
+  ProspectFroid @map("Prospect froid")
+  ProspectInformationsManquantes @map("Prospect informations manquantes")
+  ProspectContacte @map("Prospect contacté")
+  ProspectEnAttenteReponse @map("Prospect en attente réponse")
+  ProspectEnDiscussion @map("Prospect en discussion")
+  ProspectQualifie @map("Prospect qualifié (opportunité)")
+  ProspectNonQualifie @map("Prospect non qualifié")
+  OffreEnvoyee @map("Offre envoyée")
+  RelanceEnCours @map("Relance en cours")
+  Client @map("Client")
+  Perdu @map("Perdu")
+}
+
+model Url {
+  id                        Int       @id @default(autoincrement())
+  url                       String    @unique
+  sourceFile                String    @map("source_file")
+  createdAt                 DateTime  @default(now()) @map("created_at")
+  shopifyStatus             String    @default("unknown") @map("shopify_status")
+  siteKey                   String?   @map("site_key")
+  siteCountryCode           String?   @map("site_country_code")
+  siteCountryName           String?   @map("site_country_name")
+  siteLanguageCode          String?   @map("site_language_code")
+  siteLanguageName          String?   @map("site_language_name")
+  shopifyCheckedAt          DateTime? @map("shopify_checked_at")
+  httpStatus                Int?      @map("http_status")
+  shopifyEvidence           String?   @map("shopify_evidence")
+  cmsName                   String?   @map("cms_name")
+  cmsEvidence               String?   @map("cms_evidence")
+  shopifyThemeName          String?   @map("shopify_theme_name")
+  shopifyThemeId            String?   @map("shopify_theme_id")
+  shopifyThemeSchemaName    String?   @map("shopify_theme_schema_name")
+  shopifyThemeJson          String?   @map("shopify_theme_json")
+  shopifyThemeStoreType     String?   @map("shopify_theme_store_type")
+  redesignStatus            String?   @map("redesign_status")
+  redesignDecision          String?   @map("redesign_decision")
+  scanShopifyMs             Int?      @map("scan_shopify_ms")
+  scanCatalogMs             Int?      @map("scan_catalog_ms")
+  scanContactMs             Int?      @map("scan_contact_ms")
+  scanCmsDetectionMs        Int?      @map("scan_cms_detection_ms")
+  scanLanguageMs            Int?      @map("scan_language_ms")
+  scanSeoMetaMs             Int?      @map("scan_seo_meta_ms")
+  scanLegalNoticeMs         Int?      @map("scan_legal_notice_ms")
+  scanLinkedinMs            Int?      @map("scan_linkedin_ms")
+  scanSocialMs              Int?      @map("scan_social_ms")
+  scanTechnicalMs           Int?      @map("scan_technical_ms")
+  scanLighthouseMs          Int?      @map("scan_lighthouse_ms")
+  scanWorkflowTotalMs       Int?      @map("scan_workflow_total_ms")
+  scanTtfbMs                Int?      @map("scan_ttfb_ms")
+  scanTotalMs               Int?      @map("scan_total_ms")
+  scanHtmlBytes             Int?      @map("scan_html_bytes")
+  lighthouseCheckedAt       DateTime? @map("lighthouse_checked_at")
+  lighthouseScore           Int?      @map("lighthouse_score")
+  lighthousePerformanceScore Int?     @map("lighthouse_performance_score")
+  lighthouseAccessibilityScore Int?   @map("lighthouse_accessibility_score")
+  lighthouseBestPracticesScore Int?    @map("lighthouse_best_practices_score")
+  lighthouseSeoScore        Int?      @map("lighthouse_seo_score")
+  lighthouseObservationsJson String?   @map("lighthouse_observations_json")
+  lighthouseReportJson      String?   @map("lighthouse_report_json")
+  rescanRequestedAt         DateTime? @map("rescan_requested_at")
+  shopifyLegalNoticeStatus  String?   @map("shopify_legal_notice_status")
+  shopifyLegalNoticeUrl     String?   @map("shopify_legal_notice_url")
+  shopifyLegalNoticeCheckedAt DateTime? @map("shopify_legal_notice_checked_at")
+  seoMetaCheckedAt          DateTime? @map("seo_meta_checked_at")
+  siteName                  String?   @map("site_name")
+  trashedAt                 DateTime? @map("trashed_at")
+  blacklistedAt             DateTime? @map("blacklisted_at")
+  prospect                  Prospect?
+
+  @@index([sourceFile])
+  @@index([siteKey])
+  @@index([createdAt])
+  @@index([shopifyStatus])
+  @@index([shopifyCheckedAt])
+  @@index([siteName])
+  @@index([trashedAt])
+  @@index([blacklistedAt])
+  @@index([trashedAt, blacklistedAt, createdAt])
+  @@map("urls")
+}
+
+model Prospect {
+  id         Int      @id @default(autoincrement())
+  urlId      Int?     @unique @map("url_id")
+  url        Url?     @relation(fields: [urlId], references: [id], onDelete: SetNull)
+  name       String?  @map("name")
+  siteName   String?  @map("site_name")
+  sourceUrl  String   @map("source_url")
+  sourceFile String   @map("source_file")
+  status     ProspectStatus @default(ProspectFroid)
+  leadScore  Int      @default(0) @map("lead_score")
+  email      String?  @map("email")
+  emailSendCount Int  @default(0) @map("email_send_count")
+  phone      String?  @map("phone")
+  linkedinUrl String? @map("linkedin_url")
+  owner      String?  @map("owner")
+  lastName   String?  @map("last_name")
+  siret      String?  @map("siret")
+  siren      String?  @map("siren")
+  companyName String? @map("company_name")
+  companyAddress String? @map("company_address")
+  companyAddressExtra String? @map("company_address_extra")
+  companyPostalCode String? @map("company_postal_code")
+  companyCity String? @map("company_city")
+  companyLegalForm String? @map("company_legal_form")
+  companyCountry String? @map("company_country")
+  companyLinkedinUrl String? @map("company_linkedin_url")
+  lastChecked DateTime? @map("last_checked")
+  evidence   String?  @map("evidence")
+  score      Int      @default(0)
+  firstName  String?  @map("first_name")
+  socialLinksJson String? @map("social_links_json")
+  contactStatus             String    @default("unknown") @map("contact_status")
+  contactCheckedAt          DateTime? @map("contact_checked_at")
+  firstContactEmailQueuedAt DateTime? @map("first_contact_email_queued_at")
+  firstContactEmailSentAt DateTime? @map("first_contact_email_sent_at")
+  firstContactEmailSubject String? @map("first_contact_email_subject")
+  firstContactEmailBody String? @map("first_contact_email_body")
+  quoteFileName String? @map("quote_file_name")
+  quoteSentAt DateTime? @map("quote_sent_at")
+  contractFileName String? @map("contract_file_name")
+  contractSentAt DateTime? @map("contract_sent_at")
+  contractSignedAt DateTime? @map("contract_signed_at")
+  trashedAt  DateTime? @map("trashed_at")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  @@index([status])
+  @@index([sourceFile])
+  @@index([trashedAt])
+  @@map("prospects")
+}
+
+model ImportBatch {
+  id             Int       @id @default(autoincrement())
+  sourceFile     String    @map("source_file")
+  urlsJson       String    @map("urls_json")
+  urlIdsJson     String    @map("url_ids_json")
+  totalUrls      Int       @default(0) @map("total_urls")
+  existingUrls   Int       @default(0) @map("existing_urls")
+  queuedUrls     Int       @default(0) @map("queued_urls")
+  processedUrls  Int       @default(0) @map("processed_urls")
+  failedUrls     Int       @default(0) @map("failed_urls")
+  status         String    @default("created")
+  currentStep    String    @default("created") @map("current_step")
+  queuedAt       DateTime? @map("queued_at")
+  startedAt      DateTime? @map("started_at")
+  finishedAt     DateTime? @map("finished_at")
+  lastError      String?   @map("last_error")
+  shopifyDoneAt  DateTime? @map("shopify_done_at")
+  contactDoneAt  DateTime? @map("contact_done_at")
+  linkedinDoneAt DateTime? @map("linkedin_done_at")
+  technicalDoneAt DateTime? @map("technical_done_at")
+  lighthouseDoneAt DateTime? @map("lighthouse_done_at")
+  completedAt    DateTime? @map("completed_at")
+  trashedAt      DateTime? @map("trashed_at")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  @@index([status])
+  @@index([createdAt])
+  @@index([trashedAt, createdAt])
+  @@index([trashedAt, status, createdAt])
+  @@map("imports")
+}
+
+model SiteSetting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @default(now()) @map("updated_at")
+
+  @@map("site_settings")
+}
+
+model SiteQualification {
+  id                      Int      @id @default(autoincrement())
+  urlId                   Int      @unique @map("url_id")
+  positioning             String?
+  abandonReason           String?  @map("abandon_reason")
+  mainObservationKey      String?  @map("main_observation_key")
+  verificationChecklistJson String? @map("verification_checklist_json")
+  createdAt               DateTime @default(now()) @map("created_at")
+  updatedAt               DateTime @default(now()) @map("updated_at")
+
+  @@map("site_qualifications")
+}
+
+model SiteObservation {
+  id             Int      @id @default(autoincrement())
+  urlId          Int      @map("url_id")
+  observationKey String   @map("observation_key")
+  title          String
+  detail         String
+  severity       String   @default("info")
+  source         String   @default("manual")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @default(now()) @map("updated_at")
+
+  @@unique([urlId, observationKey])
+  @@index([urlId])
+  @@map("site_observations")
+}
+
+model ProspectEmailSendHistory {
+  id             Int      @id @default(autoincrement())
+  prospectId     Int      @map("prospect_id")
+  recipientEmail String   @map("recipient_email")
+  sentAt         DateTime @default(now()) @map("sent_at")
+  sentDay        String   @map("sent_day")
+  updatedAt      DateTime @default(now()) @map("updated_at")
+
+  @@map("prospect_email_send_history")
+}
+
+model ProspectEmailSendingStat {
+  sendingDate  String   @id @map("sending_date")
+  sentCount    Int      @default(0) @map("sent_count")
+  reservedCount Int     @default(0) @map("reserved_count")
+  updatedAt    DateTime @default(now()) @map("updated_at")
+
+  @@map("prospect_email_sending_stats")
+}
