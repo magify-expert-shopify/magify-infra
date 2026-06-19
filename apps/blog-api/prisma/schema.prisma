@@ -1,0 +1,584 @@
+generator client {
+  provider     = "prisma-client"
+  output       = "../generated/prisma"
+  moduleFormat = "cjs"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model AppSetting {
+  id        String    @id(map: "idx_16404_sqlite_autoindex_appsetting_1")
+  key       String?   @unique(map: "idx_16404_appsetting_key_key")
+  value     String?
+  createdAt DateTime? @default(now()) @db.Timestamptz(6) @map("createdat")
+  updatedAt DateTime? @db.Timestamptz(6) @map("updatedat")
+
+  @@map("appsetting")
+}
+
+model Author {
+  id                   String                @id(map: "idx_16410_sqlite_autoindex_author_1")
+  name                 String?
+  slug                 String?
+  bio                  String?
+  profileUrl           String? @map("profileurl")
+  avatarUrl            String? @map("avatarurl")
+  source               String?               @default("COMPETITOR")
+  trashedAt            DateTime?             @db.Timestamptz(6) @map("trashedat")
+  createdAt            DateTime?             @default(now()) @db.Timestamptz(6) @map("createdat")
+  updatedAt            DateTime?             @db.Timestamptz(6) @map("updatedat")
+  competitorAgencySiteId               String? @map("siteid")
+  displayName          String? @map("displayname")
+  email                String?               @unique(map: "idx_16410_author_email_key")
+  firstName            String? @map("firstname")
+  lastName             String? @map("lastname")
+  phoneNumber          String? @map("phonenumber")
+  shopifyMetaobjectId  String?               @unique(map: "idx_16410_author_shopifymetaobjectid_key") @map("shopifymetaobjectid")
+  jobTitle             String? @map("jobtitle")
+  linkedinProfileUrl   String? @map("linkedinprofileurl")
+  shopifyPageId        String? @map("shopifypageid")
+  shopifyAvatarId      String? @map("shopifyavatarid")
+  competitorAgencySite CompetitorAgencySite? @relation(fields: [competitorAgencySiteId], references: [id], onDelete: Cascade)
+  blogArticles          BlogArticle[]
+  blogs                 Blog[]                @relation("authortoblog")
+
+  @@unique([name, profileUrl], map: "idx_16410_author_name_profileurl_key")
+  @@index([name], map: "idx_16410_author_name_idx")
+  @@index([source], map: "idx_16410_author_source_idx")
+
+  @@map("author")
+}
+
+model Blog {
+  id                     String                @id(map: "idx_16461_sqlite_autoindex_blog_1")
+  name                   String?
+  baseUrl                String? @map("baseurl")
+  feedUrl                String? @map("feedurl")
+  slug                   String?
+  title                  String?
+  description            String?
+  platform               String?               @default("UNKNOWN")
+  languageCode           String? @map("languagecode")
+  projectId              String? @map("projectid")
+  lastScannedAt          DateTime?             @db.Timestamptz(6) @map("lastscannedat")
+  trashedAt              DateTime?             @db.Timestamptz(6) @map("trashedat")
+  createdAt              DateTime?             @default(now()) @db.Timestamptz(6) @map("createdat")
+  updatedAt              DateTime?             @db.Timestamptz(6) @map("updatedat")
+  competitorAgencySiteId String? @map("competitoragencysiteid")
+  shopifyBlogId          String? @map("shopifyblogid")
+  competitorAgencySite   CompetitorAgencySite? @relation(fields: [competitorAgencySiteId], references: [id], onDelete: Cascade)
+  project                Project?              @relation(fields: [projectId], references: [id])
+  blogArticles            BlogArticle[]
+  authors                 Author[]              @relation("authortoblog")
+
+  @@unique([competitorAgencySiteId, baseUrl], map: "idx_16461_blog_competitoragencysiteid_baseurl_key")
+  @@index([competitorAgencySiteId], map: "idx_16461_blog_competitoragencysiteid_idx")
+  @@index([projectId], map: "idx_16461_blog_projectid_idx")
+  @@index([shopifyBlogId], map: "idx_16461_blog_shopifyblogid_idx")
+
+  @@map("blog")
+}
+
+model BlogArticle {
+  id                     String                   @id(map: "idx_16468_sqlite_autoindex_blogarticle_1")
+  url                    String?                  @unique(map: "idx_16468_blogarticle_url_key")
+  slug                   String?
+  title                  String?
+  excerpt                String?
+  content                String?
+  primaryKeyword         String? @map("primarykeyword")
+  requiredKeywords       String? @map("requiredkeywords")
+  seoTitle               String? @map("seotitle")
+  seoDescription         String? @map("seodescription")
+  status                 String?                  @default("DRAFT")
+  shopifyArticleId       String?                  @unique(map: "idx_16468_blogarticle_shopifyarticleid_key") @map("shopifyarticleid")
+  shopifyBlogId          String? @map("shopifyblogid")
+  pageId                 String?                  @unique(map: "idx_16468_blogarticle_pageid_key") @map("pageid")
+  projectId              String? @map("projectid")
+  publishedAt            DateTime?                @db.Timestamptz(6) @map("publishedat")
+  plannedFor             DateTime?                @db.Timestamptz(6) @map("plannedfor")
+  discoveredAt           DateTime?                @default(now()) @db.Timestamptz(6) @map("discoveredat")
+  lastScannedAt          DateTime?                @db.Timestamptz(6) @map("lastscannedat")
+  trashedAt              DateTime?                @db.Timestamptz(6) @map("trashedat")
+  createdAt              DateTime?                @default(now()) @db.Timestamptz(6) @map("createdat")
+  updatedAt              DateTime?                @db.Timestamptz(6) @map("updatedat")
+  blogId                 String? @map("blogid")
+  seoClusterId              String? @map("clusterid")
+  authorId               String? @map("authorid")
+  videoYoutubeUrl        String? @map("videoyoutubeurl")
+  reviewSupabaseUserId   String? @map("reviewsupabaseuserid")
+  reviewAssignedAt       DateTime?                @db.Timestamptz(6) @map("reviewassignedat")
+  reviewDueAt            DateTime?                @db.Timestamptz(6) @map("reviewdueat")
+  reviewCompletedAt      DateTime?                @db.Timestamptz(6) @map("reviewcompletedat")
+  reviewOutcome          String? @map("reviewoutcome")
+  reviewComment          String? @map("reviewcomment")
+  author                 Author?                  @relation(fields: [authorId], references: [id])
+  blog                   Blog?                    @relation(fields: [blogId], references: [id])
+  seoCluster             SeoCluster?              @relation(fields: [seoClusterId], references: [id])
+  page                   Page?                    @relation(fields: [pageId], references: [id])
+  project                Project?                 @relation(fields: [projectId], references: [id])
+  blogArticleScriptAssets BlogArticleScriptAsset[]
+
+  @@unique([blogId, slug], map: "idx_16468_blogarticle_blogid_slug_key")
+  @@index([authorId], map: "idx_16468_blogarticle_authorid_idx")
+  @@index([blogId], map: "idx_16468_blogarticle_blogid_idx")
+  @@index([seoClusterId], map: "idx_16468_blogarticle_clusterid_idx")
+  @@index([pageId], map: "idx_16468_blogarticle_pageid_idx")
+  @@index([projectId], map: "idx_16468_blogarticle_projectid_idx")
+  @@index([publishedAt], map: "idx_16468_blogarticle_publishedat_idx")
+  @@index([reviewDueAt], map: "idx_16468_blogarticle_reviewdueat_idx")
+  @@index([reviewSupabaseUserId], map: "idx_16468_blogarticle_reviewsupabaseuserid_idx")
+  @@index([shopifyBlogId], map: "idx_16468_blogarticle_shopifyblogid_idx")
+
+  @@map("blogarticle")
+}
+
+model BlogArticleScriptAsset {
+  id            String       @id(map: "idx_16558_sqlite_autoindex_blogarticlescriptasset_1")
+  blogArticleId String? @map("blogarticleid")
+  url           String?
+  position      BigInt?      @default(0)
+  createdAt     DateTime?    @default(now()) @db.Timestamptz(6) @map("createdat")
+  updatedAt     DateTime?    @db.Timestamptz(6) @map("updatedat")
+  blogArticle   BlogArticle? @relation(fields: [blogArticleId], references: [id], onDelete: Cascade)
+
+  @@unique([blogArticleId, url], map: "idx_16558_blogarticlescriptasset_blogarticleid_url_key")
+  @@index([blogArticleId], map: "idx_16558_blogarticlescriptasset_blogarticleid_idx")
+  @@index([position], map: "idx_16558_blogarticlescriptasset_position_idx")
+
+  @@map("blogarticlescriptasset")
+}
+
+model CompetitorAgencySite {
+  id            String    @id(map: "idx_16476_sqlite_autoindex_competitoragencysite_1")
+  name          String?
+  baseUrl       String?   @unique(map: "idx_16476_competitoragencysite_baseurl_key") @map("baseurl")
+  projectId     String? @map("projectid")
+  lastScannedAt DateTime? @db.Timestamptz(6) @map("lastscannedat")
+  trashedAt     DateTime? @db.Timestamptz(6) @map("trashedat")
+  createdAt     DateTime? @default(now()) @db.Timestamptz(6) @map("createdat")
+  updatedAt     DateTime? @db.Timestamptz(6) @map("updatedat")
+  authors        Author[]
+  blogs          Blog[]
+  project       Project?  @relation(fields: [projectId], references: [id])
+
+  @@index([projectId], map: "idx_16476_competitoragencysite_projectid_idx")
+
+  @@map("competitoragencysite")
+}
+
+model CustomerProblem {
+  id                      String                   @id(map: "idx_16482_sqlite_autoindex_customerproblem_1")
+  title                   String?
+  description             String?
+  source                  String?
+  intention               String? @map("intention")
+  customerProblemCategoryId              String? @map("categoryid")
+  projectId               String? @map("projectid")
+  trashedAt               DateTime?                @db.Timestamptz(6) @map("trashedat")
+  createdAt               DateTime?                @default(now()) @db.Timestamptz(6) @map("createdat")
+  updatedAt               DateTime?                @db.Timestamptz(6) @map("updatedat")
+  customerProblemCategory CustomerProblemCategory? @relation(fields: [customerProblemCategoryId], references: [id])
+  project                 Project?                 @relation(fields: [projectId], references: [id])
+  keywords                 Keyword[]
+  seoClusters              SeoCluster[]             @relation("customerproblemtoseocluster")
+
+  @@index([customerProblemCategoryId], map: "idx_16482_customerproblem_categoryid_idx")
+  @@index([intention], map: "idx_16482_customerproblem_intention_idx")
+  @@index([projectId], map: "idx_16482_customerproblem_projectid_idx")
+  @@index([source], map: "idx_16482_customerproblem_source_idx")
+  @@index([title], map: "idx_16482_customerproblem_title_idx")
+
+  @@map("customerproblem")
+}
+
+model CustomerProblemCategory {
+  id              String            @id(map: "idx_16488_sqlite_autoindex_customerproblemcategory_1")
+  title           String?
+  projectId       String? @map("projectid")
+  trashedAt       DateTime?         @db.Timestamptz(6) @map("trashedat")
+  createdAt       DateTime?         @default(now()) @db.Timestamptz(6) @map("createdat")
+  updatedAt       DateTime?         @db.Timestamptz(6) @map("updatedat")
+  customerProblems CustomerProblem[]
+  project         Project?          @relation(fields: [projectId], references: [id])
+  seoClusters      SeoCluster[]      @relation("customerproblemcategorytoseocluster")
+
+  @@index([projectId], map: "idx_16488_customerproblemcategory_projectid_idx")
+  @@index([title], map: "idx_16488_customerproblemcategory_title_idx")
+
+  @@map("customerproblemcategory")
+}
+
+model DataForSeoCache {
+  id             String    @id(map: "idx_16397_sqlite_autoindex_dataforseocache_1")
+  endpoint       String?
+  cacheKey       String?   @unique(map: "idx_16397_dataforseocache_cachekey_key") @map("cachekey")
+  requestPayload String? @map("requestpayload")
+  responseBody   String? @map("responsebody")
+  createdAt      DateTime? @default(now()) @db.Timestamptz(6) @map("createdat")
+  updatedAt      DateTime? @db.Timestamptz(6) @map("updatedat")
+  lastUsedAt     DateTime? @default(now()) @db.Timestamptz(6) @map("lastusedat")
+  expiresAt      DateTime? @db.Timestamptz(6) @map("expiresat")
+
+  @@index([endpoint], map: "idx_16397_dataforseocache_endpoint_idx")
+  @@index([lastUsedAt], map: "idx_16397_dataforseocache_lastusedat_idx")
+
+  @@map("dataforseocache")
+}
+
+model GoogleSuggestCache {
+  id             String    @id(map: "idx_16442_sqlite_autoindex_googlesuggestcache_1")
+  endpoint       String?
+  cacheKey       String?   @unique(map: "idx_16442_googlesuggestcache_cachekey_key") @map("cachekey")
+  requestPayload String? @map("requestpayload")
+  responseBody   String? @map("responsebody")
+  createdAt      DateTime? @default(now()) @db.Timestamptz(6) @map("createdat")
+  updatedAt      DateTime? @db.Timestamptz(6) @map("updatedat")
+  lastUsedAt     DateTime? @default(now()) @db.Timestamptz(6) @map("lastusedat")
+  expiresAt      DateTime? @db.Timestamptz(6) @map("expiresat")
+
+  @@index([endpoint], map: "idx_16442_googlesuggestcache_endpoint_idx")
+  @@index([lastUsedAt], map: "idx_16442_googlesuggestcache_lastusedat_idx")
+
+  @@map("googlesuggestcache")
+}
+
+model InternalLink {
+  id                                 String    @id(map: "idx_16494_sqlite_autoindex_internallink_1")
+  fromPageId                         String? @map("frompageid")
+  toPageId                           String? @map("topageid")
+  projectId                          String? @map("projectid")
+  anchorText                         String? @map("anchortext")
+  createdAt                          DateTime? @default(now()) @db.Timestamptz(6) @map("createdat")
+  outgoingInternalLinks Page?     @relation("internallink_frompageidTopage", fields: [fromPageId], references: [id], onDelete: Cascade)
+  project                            Project?  @relation(fields: [projectId], references: [id])
+  incomingInternalLinks   Page?     @relation("internallink_topageidTopage", fields: [toPageId], references: [id], onDelete: Cascade)
+
+  @@unique([fromPageId, toPageId], map: "idx_16494_internallink_frompageid_topageid_key")
+  @@index([fromPageId], map: "idx_16494_internallink_frompageid_idx")
+  @@index([projectId], map: "idx_16494_internallink_projectid_idx")
+  @@index([toPageId], map: "idx_16494_internallink_topageid_idx")
+
+  @@map("internallink")
+}
+
+model Keyword {
+  id                               String                             @id(map: "idx_16500_sqlite_autoindex_keyword_1")
+  keyword                          String?
+  isFavorite                       Boolean?                           @default(false) @map("isfavorite")
+  volume                           BigInt?
+  difficulty                       BigInt?
+  searchIntent                     String? @map("searchintent")
+  searchIntentDescription          String? @map("searchintentdescription")
+  source                           String?                            @default("OTHER")
+  lengthType                       String? @map("lengthtype")
+  template                         String?
+  trashedAt                        DateTime?                          @db.Timestamptz(6) @map("trashedat")
+  lastScannedAt                    DateTime?                          @db.Timestamptz(6) @map("lastscannedat")
+  createdAt                        DateTime?                          @default(now()) @db.Timestamptz(6) @map("createdat")
+  updatedAt                        DateTime?                          @default(now()) @db.Timestamptz(6) @map("updatedat")
+  projectId                        String? @map("projectid")
+  keywordGroupId                   String? @map("keywordgroupid")
+  seoClusterId                        String? @map("clusterid")
+  pageId                           String? @map("pageid")
+  customerProblemId                String? @map("customerproblemid")
+  seoCluster                       SeoCluster?                        @relation(fields: [seoClusterId], references: [id])
+  customerProblem                  CustomerProblem?                   @relation(fields: [customerProblemId], references: [id])
+  keywordGroup                     KeywordGroup?                      @relation(fields: [keywordGroupId], references: [id])
+  page                             Page?                              @relation(fields: [pageId], references: [id])
+  project                          Project?                           @relation(fields: [projectId], references: [id])
+  keywordSiteVisibilityObservations KeywordSiteVisibilityObservation[]
+
+  @@unique([customerProblemId, keyword], map: "idx_16500_keyword_customerproblemid_keyword_key")
+  @@index([seoClusterId], map: "idx_16500_keyword_clusterid_idx")
+  @@index([customerProblemId], map: "idx_16500_keyword_customerproblemid_idx")
+  @@index([keyword], map: "idx_16500_keyword_keyword_idx")
+  @@index([keywordGroupId], map: "idx_16500_keyword_keywordgroupid_idx")
+  @@index([projectId], map: "idx_16500_keyword_projectid_idx")
+
+  @@map("keyword")
+}
+
+model KeywordGroup {
+  id                                                          String                  @id(map: "idx_16509_sqlite_autoindex_keywordgroup_1")
+  name                                                        String?
+  primaryKeyword                                              String? @map("primarykeyword")
+  description                                                 String?
+  isFavorite                                                  Boolean?                @default(false) @map("isfavorite")
+  parentGroupId                                               String? @map("parentgroupid")
+  projectId                                                   String? @map("projectid")
+  seoClusterId                                                String? @map("seoclusterid")
+  trashedAt                                                   DateTime?               @db.Timestamptz(6) @map("trashedat")
+  createdAt                                                   DateTime?               @default(now()) @db.Timestamptz(6) @map("createdat")
+  updatedAt                                                   DateTime?               @db.Timestamptz(6) @map("updatedat")
+  keywords                                                     Keyword[]
+  keywordGroupKeywordGroupParentGroupIdToKeywordGroup       KeywordGroup?           @relation("keywordgroup_parentgroupidTokeywordgroup", fields: [parentGroupId], references: [id])
+  childKeywordGroups KeywordGroup[]          @relation("keywordgroup_parentgroupidTokeywordgroup")
+  project                                                     Project?                @relation(fields: [projectId], references: [id])
+  seoCluster                                                SeoCluster?             @relation("keywordgroup_seoclusteridToseocluster", fields: [seoClusterId], references: [id])
+  keywordGroupAssignment                                      KeywordGroupAssignment?
+  pagePlan                                                    PagePlan?
+  pillarKeywordGroup                                        SeoCluster?             @relation("seocluster_pillarkeywordgroupidTokeywordgroup")
+  multiParentGroupsA                     KeywordGroup[]          @relation("keywordgroupmultiparents")
+  multiParentGroupsB                     KeywordGroup[]          @relation("keywordgroupmultiparents")
+
+  @@index([isFavorite], map: "idx_16509_keywordgroup_isfavorite_idx")
+  @@index([name], map: "idx_16509_keywordgroup_name_idx")
+  @@index([parentGroupId], map: "idx_16509_keywordgroup_parentgroupid_idx")
+  @@index([primaryKeyword], map: "idx_16509_keywordgroup_primarykeyword_idx")
+  @@index([projectId], map: "idx_16509_keywordgroup_projectid_idx")
+  @@index([seoClusterId], map: "idx_16509_keywordgroup_seoclusterid_idx")
+
+  @@map("keywordgroup")
+}
+
+model KeywordGroupAssignment {
+  id             String        @id(map: "idx_16516_sqlite_autoindex_keywordgroupassignment_1")
+  keywordGroupId String?       @unique(map: "idx_16516_keywordgroupassignment_keywordgroupid_key") @map("keywordgroupid")
+  supabaseUserId String? @map("supabaseuserid")
+  assignedAt     DateTime?     @default(now()) @db.Timestamptz(6) @map("assignedat")
+  createdAt      DateTime?     @default(now()) @db.Timestamptz(6) @map("createdat")
+  updatedAt      DateTime?     @db.Timestamptz(6) @map("updatedat")
+  keywordGroup   KeywordGroup? @relation(fields: [keywordGroupId], references: [id], onDelete: Cascade)
+  supabaseUser   SupabaseUser? @relation(fields: [supabaseUserId], references: [id], onDelete: Cascade)
+
+  @@index([supabaseUserId], map: "idx_16516_keywordgroupassignment_supabaseuserid_idx")
+
+  @@map("keywordgroupassignment")
+}
+
+model KeywordSiteVisibilityObservation {
+  id                   String    @id(map: "idx_16571_sqlite_autoindex_keywordsitevisibilityobservation_1")
+  projectId            String? @map("projectid")
+  keywordId            String? @map("keywordid")
+  keywordText          String? @map("keywordtext")
+  keywordVolume        BigInt? @map("keywordvolume")
+  keywordDifficulty    BigInt? @map("keyworddifficulty")
+  keywordIntent        String? @map("keywordintent")
+  pageId               String? @map("pageid")
+  pageUrl              String? @map("pageurl")
+  siteBaseUrl          String? @map("sitebaseurl")
+  siteHostname         String? @map("sitehostname")
+  position             BigInt?
+  serpResponseBody     String? @map("serpresponsebody")
+  sourceCacheKey       String? @map("sourcecachekey")
+  sourceCacheCreatedAt DateTime? @db.Timestamptz(6) @map("sourcecachecreatedat")
+  observedAt           DateTime? @default(now()) @db.Timestamptz(6) @map("observedat")
+  createdAt            DateTime? @default(now()) @db.Timestamptz(6) @map("createdat")
+  updatedAt            DateTime? @default(now()) @db.Timestamptz(6) @map("updatedat")
+  keyword              Keyword?  @relation(fields: [keywordId], references: [id])
+  page                 Page?     @relation(fields: [pageId], references: [id])
+  project              Project?  @relation(fields: [projectId], references: [id])
+
+  @@unique([sourceCacheKey, pageUrl], map: "idx_16571_keywordsitevisibilityobservation_sourcecachekey_pageu")
+  @@index([keywordId], map: "idx_16571_keywordsitevisibilityobservation_keywordid_idx")
+  @@index([keywordText], map: "idx_16571_keywordsitevisibilityobservation_keywordtext_idx")
+  @@index([observedAt], map: "idx_16571_keywordsitevisibilityobservation_observedat_idx")
+  @@index([pageId], map: "idx_16571_keywordsitevisibilityobservation_pageid_idx")
+  @@index([position], map: "idx_16571_keywordsitevisibilityobservation_position_idx")
+  @@index([projectId], map: "idx_16571_keywordsitevisibilityobservation_projectid_idx")
+  @@index([siteBaseUrl], map: "idx_16571_keywordsitevisibilityobservation_sitebaseurl_idx")
+  @@index([siteHostname], map: "idx_16571_keywordsitevisibilityobservation_sitehostname_idx")
+  @@index([sourceCacheCreatedAt], map: "idx_16571_keywordsitevisibilityobservation_sourcecachecreatedat")
+
+  @@map("keywordsitevisibilityobservation")
+}
+
+model OpenAiCache {
+  id             String    @id(map: "idx_16434_sqlite_autoindex_openaicache_1")
+  endpoint       String?
+  promptType     String?   @default("OTHER") @map("prompttype")
+  cacheKey       String? @map("cachekey")
+  requestPayload String? @map("requestpayload")
+  responseBody   String? @map("responsebody")
+  createdAt      DateTime? @default(now()) @db.Timestamptz(6) @map("createdat")
+  updatedAt      DateTime? @db.Timestamptz(6) @map("updatedat")
+  lastUsedAt     DateTime? @default(now()) @db.Timestamptz(6) @map("lastusedat")
+  expiresAt      DateTime? @db.Timestamptz(6) @map("expiresat")
+  model          String?
+
+  @@index([endpoint], map: "idx_16434_openaicache_endpoint_idx")
+  @@index([lastUsedAt], map: "idx_16434_openaicache_lastusedat_idx")
+
+  @@map("openaicache")
+}
+
+model Page {
+  id                                         String                             @id(map: "idx_16523_sqlite_autoindex_page_1")
+  url                                        String?                            @unique(map: "idx_16523_page_url_key")
+  slug                                       String?
+  title                                      String?
+  status                                     String?                            @default("DRAFT")
+  pageType                                   String?                            @default("OTHER") @map("pagetype")
+  seoRole                                    String? @map("seorole")
+  searchIntent                               String? @map("searchintent")
+  projectId                                  String? @map("projectid")
+  seoClusterId                                  String? @map("clusterid")
+  trashedAt                                  DateTime?                          @db.Timestamptz(6) @map("trashedat")
+  createdAt                                  DateTime?                          @default(now()) @db.Timestamptz(6) @map("createdat")
+  updatedAt                                  DateTime?                          @db.Timestamptz(6) @map("updatedat")
+  blogArticle                                BlogArticle?
+  internalLinkInternalLinkFromPageIdToPage InternalLink[]                     @relation("internallink_frompageidTopage")
+  internalLinkInternalLinkToPageIdToPage   InternalLink[]                     @relation("internallink_topageidTopage")
+  keywords                                    Keyword[]
+  keywordSiteVisibilityObservations           KeywordSiteVisibilityObservation[]
+  seoCluster                                 SeoCluster?                        @relation(fields: [seoClusterId], references: [id], onDelete: Cascade)
+  project                                    Project?                           @relation(fields: [projectId], references: [id])
+  pagePlan                                   PagePlan?
+
+  @@index([projectId], map: "idx_16523_page_projectid_idx")
+
+  @@map("page")
+}
+
+model PagePlan {
+  id                  String        @id(map: "idx_16565_sqlite_autoindex_pageplan_1")
+  keywordGroupId      String?       @unique(map: "idx_16565_pageplan_keywordgroupid_key") @map("keywordgroupid")
+  pageId              String?       @unique(map: "idx_16565_pageplan_pageid_key") @map("pageid")
+  projectId           String? @map("projectid")
+  pageType            String? @map("pagetype")
+  subjectExact        String? @map("subjectexact")
+  primaryKeyword      String? @map("primarykeyword")
+  secondaryKeywords   String? @map("secondarykeywords")
+  target              String? @map("target")
+  conversionObjective String? @map("conversionobjective")
+  approxLength        String? @map("approxlength")
+  plan                String? @map("plan")
+  createdAt           DateTime?     @default(now()) @db.Timestamptz(6) @map("createdat")
+  updatedAt           DateTime?     @db.Timestamptz(6) @map("updatedat")
+  keywordGroup        KeywordGroup? @relation(fields: [keywordGroupId], references: [id], onDelete: Cascade)
+  page                Page?         @relation(fields: [pageId], references: [id])
+  project             Project?      @relation(fields: [projectId], references: [id])
+
+  @@index([pageId], map: "idx_16565_pageplan_pageid_idx")
+  @@index([projectId], map: "idx_16565_pageplan_projectid_idx")
+
+  @@map("pageplan")
+}
+
+model Project {
+  id                               String                             @id(map: "idx_16531_sqlite_autoindex_project_1")
+  name                             String?
+  slug                             String?                            @unique(map: "idx_16531_project_slug_key")
+  description                      String?
+  createdAt                        DateTime?                          @default(now()) @db.Timestamptz(6) @map("createdat")
+  updatedAt                        DateTime?                          @db.Timestamptz(6) @map("updatedat")
+  shopifyStoreDomain               String? @map("shopifystoredomain")
+  blogs                             Blog[]
+  blogArticles                      BlogArticle[]
+  competitorAgencySites             CompetitorAgencySite[]
+  customerProblems                  CustomerProblem[]
+  customerProblemCategories          CustomerProblemCategory[]
+  internalLinks                     InternalLink[]
+  keywords                          Keyword[]
+  keywordGroups                     KeywordGroup[]
+  keywordSiteVisibilityObservations KeywordSiteVisibilityObservation[]
+  pages                             Page[]
+  pagePlans                         PagePlan[]
+  projectMembers                    ProjectMember[]
+  seoClusters                       SeoCluster[]
+
+  @@index([name], map: "idx_16531_project_name_idx")
+
+  @@map("project")
+}
+
+model ProjectMember {
+  id             String        @id(map: "idx_16537_sqlite_autoindex_projectmember_1")
+  projectId      String? @map("projectid")
+  supabaseUserId String? @map("supabaseuserid")
+  role           String?
+  createdAt      DateTime?     @default(now()) @db.Timestamptz(6) @map("createdat")
+  updatedAt      DateTime?     @db.Timestamptz(6) @map("updatedat")
+  project        Project?      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  supabaseUser   SupabaseUser? @relation(fields: [supabaseUserId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, supabaseUserId], map: "idx_16537_projectmember_projectid_supabaseuserid_key")
+  @@index([projectId], map: "idx_16537_projectmember_projectid_idx")
+  @@index([supabaseUserId], map: "idx_16537_projectmember_supabaseuserid_idx")
+
+  @@map("projectmember")
+}
+
+model PromptConfig {
+  id              String    @id(map: "idx_16427_sqlite_autoindex_promptconfig_1")
+  key             String?   @unique(map: "idx_16427_promptconfig_key_key")
+  model           String?
+  instructions    String?
+  inputTemplate   String? @map("inputtemplate")
+  maxOutputTokens BigInt?   @default(1200) @map("maxoutputtokens")
+  createdAt       DateTime? @default(now()) @db.Timestamptz(6) @map("createdat")
+  updatedAt       DateTime? @db.Timestamptz(6) @map("updatedat")
+
+  @@map("promptconfig")
+}
+
+model SeoCluster {
+  id                                                         String                    @id(map: "idx_16543_sqlite_autoindex_seocluster_1")
+  name                                                       String?
+  parentClusterId                                            String? @map("parentclusterid")
+  pillarKeywordGroupId                                       String?                   @unique(map: "idx_16543_seocluster_pillarkeywordgroupid_key") @map("pillarkeywordgroupid")
+  slug                                                       String?
+  icon                                                       String? @map("icon")
+  isFavorite                                                 Boolean?                  @default(false) @map("isfavorite")
+  isSprintCluster                                            Boolean?                  @default(false) @map("issprintcluster")
+  status                                                     String?                   @default("DRAFT")
+  topic                                                      String?
+  description                                                String?
+  primaryKeyword                                             String? @map("primarykeyword")
+  notes                                                      String?
+  projectId                                                  String? @map("projectid")
+  trashedAt                                                  DateTime?                 @db.Timestamptz(6) @map("trashedat")
+  createdAt                                                  DateTime?                 @default(now()) @db.Timestamptz(6) @map("createdat")
+  updatedAt                                                  DateTime?                 @db.Timestamptz(6) @map("updatedat")
+  blogArticles                                                BlogArticle[]
+  keywords                                                    Keyword[]
+  keywordGroups                                         KeywordGroup[]            @relation("keywordgroup_seoclusteridToseocluster")
+  pages                                                       Page[]
+  parentCluster                                             SeoCluster?               @relation("seoclusterToseocluster", fields: [parentClusterId], references: [id])
+  childClusters                                             SeoCluster[]              @relation("seoclusterToseocluster")
+  pillarKeywordGroup                                        KeywordGroup?             @relation("seocluster_pillarkeywordgroupidTokeywordgroup", fields: [pillarKeywordGroupId], references: [id])
+  project                                                    Project?                  @relation(fields: [projectId], references: [id])
+  sprints                                                     Sprint[]
+  customerProblemCategories                                    CustomerProblemCategory[] @relation("customerproblemcategorytoseocluster")
+  customerProblems                                            CustomerProblem[]         @relation("customerproblemtoseocluster")
+
+  @@index([name], map: "idx_16543_seocluster_name_idx")
+  @@index([parentClusterId], map: "idx_16543_seocluster_parentclusterid_idx")
+  @@index([primaryKeyword], map: "idx_16543_seocluster_primarykeyword_idx")
+  @@index([projectId], map: "idx_16543_seocluster_projectid_idx")
+
+  @@map("seocluster")
+}
+
+model Sprint {
+  id                     String      @id(map: "idx_16454_sqlite_autoindex_sprint_1")
+  seoClusterId              String? @map("clusterid")
+  blogArticleTargetCount BigInt?     @default(0) @map("blogarticletargetcount")
+  startDate              DateTime?   @db.Timestamptz(6) @map("startdate")
+  durationDays           BigInt? @map("durationdays")
+  createdAt              DateTime?   @default(now()) @db.Timestamptz(6) @map("createdat")
+  updatedAt              DateTime?   @db.Timestamptz(6) @map("updatedat")
+  seoCluster             SeoCluster? @relation(fields: [seoClusterId], references: [id])
+
+  @@index([seoClusterId], map: "idx_16454_sprint_clusterid_idx")
+
+  @@map("sprint")
+}
+
+model SupabaseUser {
+  id                     String                   @id(map: "idx_16552_sqlite_autoindex_supabaseuser_1")
+  email                  String?                  @unique(map: "idx_16552_supabaseuser_email_key")
+  displayName            String? @map("displayname")
+  phone                  String?
+  createdAt              DateTime?                @default(now()) @db.Timestamptz(6) @map("createdat")
+  updatedAt              DateTime?                @db.Timestamptz(6) @map("updatedat")
+  keywordGroupAssignments KeywordGroupAssignment[]
+  projectMembers          ProjectMember[]
+
+  @@index([displayName], map: "idx_16552_supabaseuser_displayname_idx")
+
+  @@map("supabaseuser")
+}
