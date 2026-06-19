@@ -1,3 +1,9 @@
-node_modules
 *.db
-*.db
+*.sqlite
+*.sqlite3
+.env
+node_modules/
+dist/
+build/
+logs/
+*.log

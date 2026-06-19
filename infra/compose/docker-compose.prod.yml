@@ -1,6 +1,6 @@
 services:
   blog-api:
-    image: ghcr.io/TON_USER/blog-api:prod
+    image: ghcr.io/brunstad/blog-api:prod
     container_name: blog-api
     restart: unless-stopped
     env_file:
@@ -9,7 +9,7 @@ services:
       - magify-network
 
   blog-web:
-    image: ghcr.io/TON_USER/blog-web:prod
+    image: ghcr.io/brunstad/blog-web:prod
     container_name: blog-web
     restart: unless-stopped
     env_file:
@@ -18,7 +18,7 @@ services:
       - magify-network
 
   prospection-api:
-    image: ghcr.io/TON_USER/prospection-api:prod
+    image: ghcr.io/brunstad/prospection-api:prod
     container_name: prospection-api
     restart: unless-stopped
     env_file:
@@ -27,7 +27,7 @@ services:
       - magify-network
 
   prospection-web:
-    image: ghcr.io/TON_USER/prospection-web:prod
+    image: ghcr.io/brunstad/prospection-web:prod
     container_name: prospection-web
     restart: unless-stopped
     env_file:
@@ -36,7 +36,7 @@ services:
       - magify-network
 
   social-api:
-    image: ghcr.io/TON_USER/social-api:prod
+    image: ghcr.io/brunstad/social-api:prod
     container_name: social-api
     restart: unless-stopped
     env_file:
@@ -45,7 +45,7 @@ services:
       - magify-network
 
   social-web:
-    image: ghcr.io/TON_USER/social-web:prod
+    image: ghcr.io/brunstad/social-web:prod
     container_name: social-web
     restart: unless-stopped
     env_file:
