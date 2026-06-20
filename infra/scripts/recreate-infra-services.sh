@@ -28,11 +28,23 @@ compose_down() {
   fi
 }
 
+remove_container_if_exists() {
+  local container_name="$1"
+
+  if docker ps -a --format '{{.Names}}' | grep -qx "$container_name"; then
+    echo "Removing stale container: $container_name"
+    docker rm -f "$container_name" >/dev/null
+  fi
+}
+
 echo "Using env file: $ENV_FILE"
 echo "Using database compose: $DB_COMPOSE_FILE"
 echo "Using proxy compose: $PROXY_COMPOSE_FILE"
 
 compose_down "$DB_COMPOSE_FILE"
+remove_container_if_exists "magify-postgree"
+remove_container_if_exists "magify-db-import"
+remove_container_if_exists "magify-redis"
 
 if [ -f "$PROXY_COMPOSE_FILE" ]; then
   compose_down "$PROXY_COMPOSE_FILE"
