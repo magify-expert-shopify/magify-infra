@@ -1,8 +1,8 @@
 param(
   [string]$RaspberryHost = '192.168.1.11',
-  [string]$RaspberryUser = 'admin',
-  [string]$RemoteRoot = '/home/admin/apps/magify-infra/infra',
-  [string]$SshKeyPath = (Join-Path $PSScriptRoot '..\ssh\raspberry')
+  [string]$RaspberryDbPort = '5432',
+  [string]$RaspberryDbUser = 'magify',
+  [string]$RaspberryDbPassword = 'brunstad'
 )
 
 $ErrorActionPreference = 'Stop'
@@ -11,92 +11,77 @@ Set-StrictMode -Version Latest
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $repoRoot = (Resolve-Path (Join-Path $scriptDir '..\..')).Path
 $localDbDir = Join-Path $repoRoot 'infra\db'
-$remoteDbDir = "$RemoteRoot/db"
-$remoteComposeDir = "$RemoteRoot/compose"
+$loadDir = Join-Path $env:TEMP 'magify-pgloader-loads'
+$pgloaderImage = 'dimitri/pgloader:latest'
 
-$dbFiles = @(
-  'blog.db',
-  'prospection.db',
-  'social.db'
+$dbMappings = @(
+  @{ File = 'blog.db'; Db = 'blog' },
+  @{ File = 'prospection.db'; Db = 'prospection' },
+  @{ File = 'social.db'; Db = 'social' }
 )
 
-$supportFiles = @(
-  @{ Local = Join-Path $repoRoot 'infra\compose\.env.prod'; Remote = "$remoteComposeDir/.env.prod" },
-  @{ Local = Join-Path $repoRoot 'infra\db\import.sh'; Remote = "$remoteDbDir/import.sh" },
-  @{ Local = Join-Path $repoRoot 'infra\db\init\001-create-users-and-databases.sql'; Remote = "$remoteDbDir/init/001-create-users-and-databases.sql" }
-)
+function Invoke-DockerCommand {
+  param(
+    [Parameter(Mandatory = $true)]
+    [string[]]$Arguments
+  )
 
-$resolvedKeyPath = (Resolve-Path $SshKeyPath).Path
-$resolvedPubKeyPath = [System.IO.Path]::ChangeExtension($resolvedKeyPath, '.pub')
-$publicKey = (Get-Content $resolvedPubKeyPath -Raw).Trim()
-
-function Ensure-SshAgent {
-  $agentService = Get-Service ssh-agent -ErrorAction Stop
-
-  if ($agentService.StartType -eq 'Disabled') {
-    try {
-      Set-Service ssh-agent -StartupType Manual
-    } catch {
-      throw "Impossible d'activer ssh-agent. Lance PowerShell en administrateur une fois, puis réessaie. Détail: $($_.Exception.Message)"
-    }
-  }
-
-  $agentService = Get-Service ssh-agent -ErrorAction Stop
-  if ($agentService.Status -ne 'Running') {
-    try {
-      Start-Service ssh-agent
-    } catch {
-      throw "Impossible de démarrer ssh-agent. Lance PowerShell en administrateur une fois, puis réessaie. Détail: $($_.Exception.Message)"
-    }
-  }
-}
-
-function Ensure-KeyLoaded {
-  $loadedKeys = & ssh-add -L 2>$null
-
-  if ($LASTEXITCODE -eq 0 -and ($loadedKeys -join "`n") -match [regex]::Escape($publicKey)) {
-    return
-  }
-
-  Write-Host "Chargement de la clé SSH dans ssh-agent: $resolvedKeyPath"
-  & ssh-add $resolvedKeyPath
+  & docker @Arguments
 
   if ($LASTEXITCODE -ne 0) {
-    throw "Impossible de charger la clé SSH dans ssh-agent."
+    throw "Commande Docker échouée: docker $($Arguments -join ' ')"
   }
 }
 
-Ensure-SshAgent
-Ensure-KeyLoaded
+if (-not (Get-Command docker -ErrorAction SilentlyContinue)) {
+  throw 'Docker n''est pas disponible dans cette session PowerShell.'
+}
 
-$sshArgs = @(
-  '-o',
-  'IdentitiesOnly=yes'
-)
+New-Item -ItemType Directory -Force -Path $loadDir | Out-Null
 
-Write-Host "Synchronisation des bases SQLite vers le Raspberry..."
-ssh @sshArgs "$RaspberryUser@$RaspberryHost" "mkdir -p '$remoteDbDir'"
-ssh @sshArgs "$RaspberryUser@$RaspberryHost" "mkdir -p '$remoteDbDir/init'"
+foreach ($mapping in $dbMappings) {
+  $sourcePath = Join-Path $localDbDir $mapping.File
 
-foreach ($dbFile in $dbFiles) {
-  $localPath = Join-Path $localDbDir $dbFile
-  if (-not (Test-Path $localPath)) {
-    Write-Host "Ignoré: $dbFile introuvable."
+  if (-not (Test-Path $sourcePath)) {
+    Write-Host "Ignoré: $($mapping.File) introuvable."
     continue
   }
 
-  scp @sshArgs $localPath "${RaspberryUser}@${RaspberryHost}:$remoteDbDir/"
+  $targetDb = $mapping.Db
+  $targetUrl = "postgresql://${RaspberryDbUser}:${RaspberryDbPassword}@${RaspberryHost}:${RaspberryDbPort}/${targetDb}"
+  $loadFilePath = Join-Path $loadDir "$targetDb.load"
+  $loadFileContent = @"
+LOAD DATABASE
+     FROM sqlite:///db/$($mapping.File)
+     INTO postgresql://${RaspberryDbUser}:${RaspberryDbPassword}@${RaspberryHost}:${RaspberryDbPort}/${targetDb}
+
+ WITH include drop, create tables, create indexes, reset sequences, foreign keys
+
+ EXCLUDING TABLE NAMES LIKE '%migrations%'
+;
+"@
+
+  [System.IO.File]::WriteAllText(
+    $loadFilePath,
+    $loadFileContent,
+    (New-Object System.Text.UTF8Encoding($false))
+  )
+
+  Write-Host "Import de $($mapping.File) vers $targetDb sur $RaspberryHost`:$RaspberryDbPort..."
+  Invoke-DockerCommand @(
+    'run',
+    '--rm',
+    '--platform',
+    'linux/amd64',
+    '--entrypoint',
+    'pgloader',
+    '-v',
+    "${localDbDir}:/db:ro",
+    '-v',
+    "${loadDir}:/work:ro",
+    $pgloaderImage,
+    "/work/$targetDb.load"
+  )
 }
 
-foreach ($item in $supportFiles) {
-  if (-not (Test-Path $item.Local)) {
-    throw "Fichier manquant: $($item.Local)"
-  }
-
-  scp @sshArgs $item.Local "${RaspberryUser}@${RaspberryHost}:$($item.Remote)"
-}
-
-Write-Host "Lancement de l'import dans le conteneur PostgreSQL du Raspberry..."
-ssh @sshArgs "$RaspberryUser@$RaspberryHost" "cd '$remoteComposeDir' && docker compose --env-file .env.prod -f docker-compose.databases.yml run --rm magify-db-import"
-
-Write-Host "Import terminé."
+Write-Host 'Import terminé.'
