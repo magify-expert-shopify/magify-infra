@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { createHash } from 'crypto';
 import { PrismaService } from '../../prisma/prisma.service';
 import { OPENAI_PROMPT_TYPES } from './openai-prompt-types.constants';
 import {
@@ -56,10 +57,11 @@ export class OpenAiPlatformService {
       body: requestBody,
     };
     const cacheKey = this.buildCacheKey(requestOptions);
+    const cacheKeyHash = this.buildCacheKeyHash(cacheKey);
     const now = new Date();
     try {
       const cachedEntry = await (this.prisma as any).openAiCache.findUnique({
-        where: { cacheKey },
+        where: { cacheKeyHash },
       });
 
       if (
@@ -79,7 +81,7 @@ export class OpenAiPlatformService {
 
         try {
           await (this.prisma as any).openAiCache.update({
-            where: { cacheKey },
+            where: { cacheKeyHash },
             data: cachedEntryUpdateData,
           });
         } catch (cacheError) {
@@ -91,7 +93,7 @@ export class OpenAiPlatformService {
                 cachedEntryUpdateData;
 
               await (this.prisma as any).openAiCache.update({
-                where: { cacheKey },
+                where: { cacheKeyHash },
                 data: fallbackData,
               });
             } catch (fallbackCacheError) {
@@ -114,7 +116,7 @@ export class OpenAiPlatformService {
 
     try {
       const cacheWriteData = {
-        where: { cacheKey },
+        where: { cacheKeyHash },
         update: {
           model: payload.model,
           promptType: normalizedPromptType,
@@ -135,6 +137,7 @@ export class OpenAiPlatformService {
           model: payload.model,
           promptType: normalizedPromptType,
           cacheKey,
+          cacheKeyHash,
           requestPayload: this.stableStringify({
             method: requestOptions.method ?? 'GET',
             path: requestOptions.path,
@@ -162,7 +165,7 @@ export class OpenAiPlatformService {
           cacheWriteData.create;
 
         await (this.prisma as any).openAiCache.upsert({
-          where: { cacheKey },
+          where: { cacheKeyHash },
           update: fallbackCacheWriteData,
           create: fallbackCreateData,
         });
@@ -183,11 +186,12 @@ export class OpenAiPlatformService {
       body: requestBody,
     };
     const cacheKey = this.buildCacheKey(requestOptions);
+    const cacheKeyHash = this.buildCacheKeyHash(cacheKey);
     const now = new Date();
 
     try {
       const cachedEntry = await (this.prisma as any).openAiCache.findUnique({
-        where: { cacheKey },
+        where: { cacheKeyHash },
       });
 
       if (
@@ -199,7 +203,7 @@ export class OpenAiPlatformService {
 
       try {
         await (this.prisma as any).openAiCache.update({
-          where: { cacheKey },
+          where: { cacheKeyHash },
           data: {
             model: payload.model,
             lastUsedAt: now,
@@ -307,6 +311,10 @@ export class OpenAiPlatformService {
       body,
       query,
     });
+  }
+
+  private buildCacheKeyHash(cacheKey: string) {
+    return createHash('sha256').update(cacheKey, 'utf8').digest('hex');
   }
 
   private stableStringify(value: unknown): string {

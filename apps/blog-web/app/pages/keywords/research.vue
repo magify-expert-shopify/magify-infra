@@ -449,7 +449,12 @@ async function selectAndAnalyzeSuggestion(suggestion: KeywordSuggestion) {
 async function loadSuggestions(query: string) {
   const trimmedQuery = query.trim();
 
-  if (trimmedQuery !== "" && trimmedQuery.length < 2) {
+  if (!trimmedQuery) {
+    resetSuggestions();
+    return;
+  }
+
+  if (trimmedQuery.length < 2) {
     resetSuggestions();
     return;
   }

@@ -91,9 +91,19 @@ export function useKeywords() {
       expand?: boolean;
     },
   ) {
+    const normalizedQuery = query.trim();
+
+    if (!normalizedQuery) {
+      return {
+        query: "",
+        total: 0,
+        suggestions: [],
+      } satisfies KeywordSheeterResponse;
+    }
+
     return await request<KeywordSheeterResponse>("/keywords/suggest", {
       query: {
-        q: query,
+        q: normalizedQuery,
         ...(typeof options?.limit === "number" ? { limit: options.limit } : {}),
         ...(options?.language ? { hl: options.language } : {}),
         ...(options?.country ? { gl: options.country } : {}),

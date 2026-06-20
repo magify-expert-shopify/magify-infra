@@ -1,8 +1,8 @@
 param(
-  [string]$RaspberryHost = $(if ($env:RASPBERRY_DB_HOST) { $env:RASPBERRY_DB_HOST } else { '192.168.1.11' }),
-  [string]$RaspberryDbPort = $(if ($env:RASPBERRY_DB_PORT) { $env:RASPBERRY_DB_PORT } else { '5432' }),
-  [string]$RaspberryDbUser = $env:RASPBERRY_DB_USER,
-  [string]$RaspberryDbPassword = $env:RASPBERRY_DB_PASSWORD
+  [string]$RaspberryHost = '192.168.1.11',
+  [string]$RaspberryDbPort = '5432',
+  [string]$RaspberryDbUser = 'magify',
+  [string]$RaspberryDbPassword = 'brunstad'
 )
 
 $ErrorActionPreference = 'Stop'
@@ -35,14 +35,6 @@ function Invoke-DockerCommand {
 
 if (-not (Get-Command docker -ErrorAction SilentlyContinue)) {
   throw 'Docker n''est pas disponible dans cette session PowerShell.'
-}
-
-if (-not $RaspberryDbUser) {
-  throw 'RASPBERRY_DB_USER doit être défini dans les variables d''environnement.'
-}
-
-if (-not $RaspberryDbPassword) {
-  throw 'RASPBERRY_DB_PASSWORD doit être défini dans les variables d''environnement.'
 }
 
 New-Item -ItemType Directory -Force -Path $loadDir | Out-Null

@@ -390,7 +390,8 @@ model OpenAiCache {
   id             String    @id(map: "idx_16434_sqlite_autoindex_openaicache_1")
   endpoint       String?
   promptType     String?   @default("OTHER") @map("prompttype")
-  cacheKey       String? @map("cachekey")
+  cacheKey       String?   @map("cachekey")
+  cacheKeyHash   String?   @unique(map: "idx_16434_openaicache_cachekeyhash_key") @map("cachekeyhash")
   requestPayload String? @map("requestpayload")
   responseBody   String? @map("responsebody")
   createdAt      DateTime? @default(now()) @db.Timestamptz(6) @map("createdat")

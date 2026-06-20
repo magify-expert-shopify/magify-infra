@@ -49,7 +49,7 @@ const scanAllProgress = ref({
   currentKeyword: "",
 });
 const keywordTablePageSize = 50;
-const activePrioritySectionKey = ref("");
+const manuallySelectedPrioritySectionKey = ref<string | null>(null);
 const sectionPages = ref<Record<string, number>>({});
 const updatingFavoriteIds = ref<string[]>([]);
 const deletingKeywordIds = ref<string[]>([]);
@@ -259,6 +259,25 @@ function setSectionPage(sectionKey: string, page: number) {
   };
 }
 
+const activePrioritySectionKey = computed(() => {
+  const sections = visiblePrioritySections.value;
+
+  if (!sections.length) {
+    return "";
+  }
+
+  const preferredKey = manuallySelectedPrioritySectionKey.value?.trim();
+
+  if (
+    preferredKey &&
+    sections.some((section) => getPrioritySectionKey(section) === preferredKey)
+  ) {
+    return preferredKey;
+  }
+
+  return getPrioritySectionKey(sections[0]);
+});
+
 const activePrioritySection = computed(() => {
   const sections = visiblePrioritySections.value;
 
@@ -268,8 +287,7 @@ const activePrioritySection = computed(() => {
 
   return (
     sections.find(
-      (section) =>
-        getPrioritySectionKey(section) === activePrioritySectionKey.value,
+      (section) => getPrioritySectionKey(section) === activePrioritySectionKey.value,
     ) ?? sections[0]
   );
 });
@@ -278,17 +296,8 @@ watch(
   visiblePrioritySections,
   (sections) => {
     if (!sections.length) {
-      activePrioritySectionKey.value = "";
+      manuallySelectedPrioritySectionKey.value = null;
       return;
-    }
-
-    const activeSectionExists = sections.some(
-      (section) =>
-        getPrioritySectionKey(section) === activePrioritySectionKey.value,
-    );
-
-    if (!activeSectionExists) {
-      activePrioritySectionKey.value = getPrioritySectionKey(sections[0]);
     }
 
     const nextPages = { ...sectionPages.value };
@@ -351,7 +360,7 @@ const activePrioritySectionKeywords = computed(() => {
 });
 
 function handlePrioritySectionTabClick(sectionKey: string) {
-  activePrioritySectionKey.value = sectionKey;
+  manuallySelectedPrioritySectionKey.value = sectionKey;
 }
 
 function handlePrioritySectionPageChange(nextPage: number) {
@@ -655,7 +664,7 @@ function handleResetFilters() {
   selectedIntent.value = "";
   selectedGroup.value = "";
   onlyFavorites.value = false;
-  activePrioritySectionKey.value = "";
+  manuallySelectedPrioritySectionKey.value = null;
   sectionPages.value = {};
 }
 

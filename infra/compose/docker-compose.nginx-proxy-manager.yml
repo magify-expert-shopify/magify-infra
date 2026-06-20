@@ -1,0 +1,24 @@
+services:
+  magify-nginx-proxy-manager:
+    image: jc21/nginx-proxy-manager:latest
+    container_name: magify-nginx-proxy-manager
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "81:81"
+      - "443:443"
+    environment:
+      TZ: Europe/Bucharest
+    volumes:
+      - magify-nginx-proxy-manager-data:/data
+      - magify-nginx-proxy-manager-letsencrypt:/etc/letsencrypt
+    networks:
+      - magify-network
+
+networks:
+  magify-network:
+    external: true
+
+volumes:
+  magify-nginx-proxy-manager-data:
+  magify-nginx-proxy-manager-letsencrypt:

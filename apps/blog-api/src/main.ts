@@ -2,25 +2,25 @@ import { Logger } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { json, urlencoded } from 'express';
 import { AppModule } from './app.module';
-// import { BigIntSerializerInterceptor } from './common/interceptors/bigint-serializer.interceptor';
+import { BigIntSerializerInterceptor } from './common/interceptors/bigint-serializer.interceptor';
 import { ALLOWED_CORS_HOSTS, BODY_SIZE_LIMIT } from './config/app.config';
 import { PORT } from './config/env.config';
 import { BullBoardService } from './modules/queues/bullboard.service';
 
 async function bootstrap() {
-  // const bigIntPrototype = BigInt.prototype as BigInt & {
-  //   toJSON?: () => string;
-  // };
+  const bigIntPrototype = BigInt.prototype as BigInt & {
+    toJSON?: () => string;
+  };
 
-  // if (typeof bigIntPrototype.toJSON !== 'function') {
-  //   Object.defineProperty(bigIntPrototype, 'toJSON', {
-  //     value: function toJSON() {
-  //       return this.toString();
-  //     },
-  //     configurable: true,
-  //     writable: true,
-  //   });
-  // }
+  if (typeof bigIntPrototype.toJSON !== 'function') {
+    Object.defineProperty(bigIntPrototype, 'toJSON', {
+      value: function toJSON() {
+        return this.toString();
+      },
+      configurable: true,
+      writable: true,
+    });
+  }
 
   const app = await NestFactory.create(AppModule);
   const logger = new Logger('Bootstrap');
@@ -29,7 +29,7 @@ async function bootstrap() {
 
   app.use(urlencoded({ extended: true, limit: BODY_SIZE_LIMIT }));
 
-  // app.useGlobalInterceptors(new BigIntSerializerInterceptor());
+  app.useGlobalInterceptors(new BigIntSerializerInterceptor());
 
   app.enableCors({
     origin(origin, callback) {

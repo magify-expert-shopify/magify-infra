@@ -2,6 +2,9 @@
 const appUrl =
   process.env.APP_URL?.trim() ||
   `http://localhost:${Number(process.env.PORT || 3000)}`;
+const appUrlObject = new URL(appUrl);
+const isDevProxyHost = appUrlObject.hostname.endsWith('.dev.magify.local');
+const hmrClientPort = isDevProxyHost ? 80 : Number(process.env.PORT || 3000);
 
 console.info(`[prospection-web] available at ${appUrl}`);
 
@@ -38,5 +41,14 @@ export default defineNuxtConfig({
     },
   },
 
-  vite: {},
+  vite: {
+    server: {
+      allowedHosts: [appUrlObject.hostname],
+      hmr: {
+        host: appUrlObject.hostname,
+        protocol: appUrlObject.protocol === 'https:' ? 'wss' : 'ws',
+        clientPort: hmrClientPort,
+      },
+    },
+  },
 });
