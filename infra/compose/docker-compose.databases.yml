@@ -1,0 +1,52 @@
+services:
+  magify-postgree:
+    image: postgres:16-alpine
+    container_name: magify-postgree
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_ADMIN_PASSWORD}
+      POSTGRES_USER: ${POSTGRES_ADMIN_USER}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_ADMIN_USER} -d postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    volumes:
+      - ../db/init/001-create-users-and-databases.sql:/docker-entrypoint-initdb.d/001-create-users-and-databases.sql:ro
+      - magify-postgree-data:/var/lib/postgresql/data
+    networks:
+      - magify-network
+
+  magify-db-import:
+    image: dimitri/pgloader:latest
+    container_name: magify-db-import
+    depends_on:
+      magify-postgree:
+        condition: service_healthy
+    env_file:
+      - .env.prod
+    entrypoint: ["/bin/sh", "/import/import.sh"]
+    volumes:
+      - ../db:/db:ro
+      - ../db/import.sh:/import/import.sh:ro
+    networks:
+      - magify-network
+
+  magify-redis:
+    image: redis:7-alpine
+    container_name: magify-redis
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - magify-redis-data:/data
+    networks:
+      - magify-network
+
+networks:
+  magify-network:
+    external: true
+
+volumes:
+  magify-postgree-data:
+  magify-redis-data:

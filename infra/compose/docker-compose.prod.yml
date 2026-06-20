@@ -4,7 +4,16 @@ services:
     container_name: blog-api
     restart: unless-stopped
     env_file:
-      - ../env/blog-api.prod.env
+      - .env.prod
+    environment:
+      APP_NAME: blog
+      PORT: 30000
+      POSTGRES_DB: ${BLOG_POSTGRES_DB}
+      POSTGRES_HOST: ${POSTGRES_HOST}
+      POSTGRES_PASSWORD: ${POSTGRES_APP_PASSWORD}
+      POSTGRES_PORT: ${POSTGRES_PORT}
+      POSTGRES_USER: ${POSTGRES_APP_USER}
+      DATABASE_URL: "postgresql://${POSTGRES_APP_USER}:${POSTGRES_APP_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${BLOG_POSTGRES_DB}"
     networks:
       - magify-network
 
@@ -13,7 +22,12 @@ services:
     container_name: blog-web
     restart: unless-stopped
     env_file:
-      - ../env/blog-web.prod.env
+      - .env.prod
+    environment:
+      APP_URL: http://blog.magify.local
+      NUXT_HOST: 0.0.0.0
+      NUXT_PORT: 30000
+      NUXT_PUBLIC_API_URL: http://blog-api.magify.local
     networks:
       - magify-network
 
@@ -22,7 +36,16 @@ services:
     container_name: prospection-api
     restart: unless-stopped
     env_file:
-      - ../env/prospection-api.prod.env
+      - .env.prod
+    environment:
+      APP_NAME: prospection
+      PORT: 30000
+      POSTGRES_DB: ${PROSPECTION_POSTGRES_DB}
+      POSTGRES_HOST: ${POSTGRES_HOST}
+      POSTGRES_PASSWORD: ${POSTGRES_APP_PASSWORD}
+      POSTGRES_PORT: ${POSTGRES_PORT}
+      POSTGRES_USER: ${POSTGRES_APP_USER}
+      DATABASE_URL: "postgresql://${POSTGRES_APP_USER}:${POSTGRES_APP_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${PROSPECTION_POSTGRES_DB}"
     networks:
       - magify-network
 
@@ -31,7 +54,12 @@ services:
     container_name: prospection-web
     restart: unless-stopped
     env_file:
-      - ../env/prospection-web.prod.env
+      - .env.prod
+    environment:
+      APP_URL: http://prospection.magify.local
+      NUXT_HOST: 0.0.0.0
+      NUXT_PORT: 30000
+      NUXT_PUBLIC_API_URL: http://prospection-api.magify.local
     networks:
       - magify-network
 
@@ -40,7 +68,16 @@ services:
     container_name: social-api
     restart: unless-stopped
     env_file:
-      - ../env/social-api.prod.env
+      - .env.prod
+    environment:
+      APP_NAME: social
+      PORT: 30000
+      POSTGRES_DB: ${SOCIAL_POSTGRES_DB}
+      POSTGRES_HOST: ${POSTGRES_HOST}
+      POSTGRES_PASSWORD: ${POSTGRES_APP_PASSWORD}
+      POSTGRES_PORT: ${POSTGRES_PORT}
+      POSTGRES_USER: ${POSTGRES_APP_USER}
+      DATABASE_URL: "postgresql://${POSTGRES_APP_USER}:${POSTGRES_APP_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${SOCIAL_POSTGRES_DB}"
     networks:
       - magify-network
 
@@ -49,7 +86,12 @@ services:
     container_name: social-web
     restart: unless-stopped
     env_file:
-      - ../env/social-web.prod.env
+      - .env.prod
+    environment:
+      APP_URL: http://social.magify.local
+      NUXT_HOST: 0.0.0.0
+      NUXT_PORT: 30000
+      NUXT_PUBLIC_API_URL: http://social-api.magify.local
     networks:
       - magify-network
 
