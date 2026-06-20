@@ -9,7 +9,8 @@ set -euo pipefail
 # The database stack is defined in infra/compose/docker-compose.databases.yml.
 # The proxy manager compose file is configurable because it is not stored in this repo.
 
-BASE_DIR="${BASE_DIR:-/home/admin/apps/magify-apps/infra}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+BASE_DIR="${BASE_DIR:-$(cd "$SCRIPT_DIR/.." && pwd)}"
 COMPOSE_DIR="${COMPOSE_DIR:-$BASE_DIR/compose}"
 ENV_FILE="${ENV_FILE:-$COMPOSE_DIR/.env.prod}"
 DB_COMPOSE_FILE="${DB_COMPOSE_FILE:-$COMPOSE_DIR/docker-compose.databases.yml}"
