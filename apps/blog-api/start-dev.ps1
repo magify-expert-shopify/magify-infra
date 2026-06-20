@@ -23,5 +23,7 @@ $env:BULLMQ_PORT = $env:REDIS_PORT
 $env:NUXT_WEB_URL = 'http://blog.dev.magify.local'
 $env:WEB_URL = $env:NUXT_WEB_URL
 $env:FRONTEND_URL = $env:NUXT_WEB_URL
+$env:SUPABASE_URL = 'https://dfbjmfcqulkhjvhbkdti.supabase.co'
+$env:SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRmYmptZmNxdWxraGp2aGJrZHRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ2MTIzMDIsImV4cCI6MjA5MDE4ODMwMn0.VHQF3iJLO6ynabcsi8GvZOddKOB7-mlHWM-ZVRGpyIU'
 
 pnpm run dev
