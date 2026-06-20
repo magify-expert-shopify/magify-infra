@@ -21,6 +21,7 @@ services:
   magify-db-import:
     image: dimitri/pgloader:latest
     container_name: magify-db-import
+    platform: ${PGLOADER_PLATFORM:-linux/amd64}
     depends_on:
       magify-postgree:
         condition: service_healthy
