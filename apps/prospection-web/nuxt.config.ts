@@ -1,4 +1,10 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
+const appUrl =
+  process.env.APP_URL?.trim() ||
+  `http://localhost:${Number(process.env.PORT || 3000)}`;
+
+console.info(`[prospection-web] available at ${appUrl}`);
+
 export default defineNuxtConfig({
   devServer: {
     host: "0.0.0.0",

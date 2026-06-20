@@ -1,6 +1,12 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
 import { fileURLToPath, URL } from "node:url";
 
+const appUrl =
+  process.env.APP_URL?.trim() ||
+  `http://localhost:${Number(process.env.PORT || 3000)}`;
+
+console.info(`[blog-web] available at ${appUrl}`);
+
 export default defineNuxtConfig({
   devServer: {
     host: "0.0.0.0",
@@ -12,7 +18,7 @@ export default defineNuxtConfig({
   runtimeConfig: {
     supabaseSecretKey: process.env.SUPABASE_SECRET_KEY,
     public: {
-      apiUrl: "http://api.blog.magify.local/",
+      apiUrl: process.env.NUXT_PUBLIC_API_URL || "http://localhost:4000",
       supabaseUrl: "https://dfbjmfcqulkhjvhbkdti.supabase.co",
       supabaseAnonKey:
         "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRmYmptZmNxdWxraGp2aGJrZHRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ2MTIzMDIsImV4cCI6MjA5MDE4ODMwMn0.VHQF3iJLO6ynabcsi8GvZOddKOB7-mlHWM-ZVRGpyIU",

@@ -2,6 +2,7 @@ import {
   BadRequestException,
   Inject,
   Injectable,
+  Logger,
   NotFoundException,
   OnModuleInit,
   forwardRef,
@@ -32,6 +33,7 @@ type CreateKeywordInput = {
 @Injectable()
 export class KeywordService implements OnModuleInit {
   private static readonly MAX_KEYWORD_GROUP_PARENTS = 3;
+  private readonly logger = new Logger(KeywordService.name);
 
   constructor(
     private readonly prisma: PrismaService,
@@ -109,7 +111,18 @@ export class KeywordService implements OnModuleInit {
   }
 
   async onModuleInit() {
-    await this.backfillLegacyKeywordGroupParents();
+    try {
+      await this.backfillLegacyKeywordGroupParents();
+    } catch (error) {
+      const message =
+        error instanceof Error && error.message
+          ? error.message
+          : 'Unknown error';
+
+      this.logger.warn(
+        `Skipped keyword group parent backfill during startup: ${message}`,
+      );
+    }
   }
 
   async listKeywords(

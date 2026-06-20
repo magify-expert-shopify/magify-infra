@@ -1,3 +1,4 @@
+import { Logger } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { json, urlencoded } from 'express';
 import { AppModule } from './app.module';
@@ -22,6 +23,7 @@ async function bootstrap() {
   // }
 
   const app = await NestFactory.create(AppModule);
+  const logger = new Logger('Bootstrap');
 
   app.use(json({ limit: BODY_SIZE_LIMIT }));
 
@@ -58,6 +60,9 @@ async function bootstrap() {
   app.get(BullBoardService).mountBullBoard(app);
 
   await app.listen(process.env.PORT ?? 3000);
+
+  const appUrl = process.env.APP_URL?.trim() || (await app.getUrl());
+  logger.log(`API available at ${appUrl}`);
 }
 
 bootstrap();

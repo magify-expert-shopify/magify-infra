@@ -34,5 +34,8 @@ async function bootstrap() {
   }
 
   await app.listen(process.env.PORT ?? 3000);
+
+  const appUrl = process.env.APP_URL?.trim() || (await app.getUrl());
+  logger.log(`API available at ${appUrl}`);
 }
 bootstrap();
