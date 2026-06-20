@@ -22,7 +22,7 @@ compose_down() {
 
   if [ -f "$compose_file" ]; then
     echo "Stopping stack: $compose_file"
-    docker compose --env-file "$ENV_FILE" -f "$compose_file" down --rmi all --volumes --remove-orphans
+    docker compose --env-file "$ENV_FILE" -f "$compose_file" down --volumes --remove-orphans
   else
     echo "Skipping missing compose file: $compose_file"
   fi
@@ -46,9 +46,6 @@ elif docker ps -a --format '{{.Names}}' | grep -qx "$PROXY_CONTAINER_NAME"; then
 else
   echo "Proxy manager not found, skipping standalone cleanup."
 fi
-
-echo "Pruning unused images..."
-docker image prune -af
 
 echo "Recreating database stack..."
 docker compose --env-file "$ENV_FILE" -f "$DB_COMPOSE_FILE" up -d
