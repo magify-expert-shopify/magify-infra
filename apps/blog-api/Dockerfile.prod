@@ -27,6 +27,7 @@ RUN corepack enable
 
 COPY --from=builder /app/deploy ./
 COPY --from=builder /app/apps/blog-api/dist ./dist
+COPY --from=builder /app/apps/blog-api/generated ./generated
 COPY --from=builder /app/apps/blog-api/prisma ./prisma
 
 EXPOSE 30000
