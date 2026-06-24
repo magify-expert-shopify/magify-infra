@@ -25,7 +25,15 @@ fi
 # ============================================================
 # Config
 # ============================================================
-REPO_URL="${REPO_URL:-}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ENV_FILE="$SCRIPT_DIR/install-github-runner-raspi.env"
+
+if [[ -f "$ENV_FILE" ]]; then
+  # shellcheck disable=SC1090
+  source "$ENV_FILE"
+fi
+
+REPO_URL="${REPO_URL:-https://github.com/magify-expert-shopify/magify-infra}"
 RUNNER_TOKEN="${RUNNER_TOKEN:-}"
 
 RUNNER_NAME="${RUNNER_NAME:-raspi-$(hostname)}"
