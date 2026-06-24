@@ -22,6 +22,7 @@ jobs:
         include:
           - image: blog-api
             dockerfile: ./apps/blog-api/Dockerfile.prod.arm64
+            package: magify-blog-api
           - image: blog-web
             dockerfile: ./apps/blog-web/Dockerfile.prod.arm64
             package: magify-blog-web
