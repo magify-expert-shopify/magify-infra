@@ -250,14 +250,18 @@ export async function loadSiteQualification(prisma: PrismaService, urlId: number
   await ensureSiteQualificationTables(prisma);
 
   const [qualificationRows, observationRows] = await Promise.all([
-    prisma.$queryRawUnsafe<any[]>(
-      'SELECT "positioning", "abandon_reason", "main_observation_key", "verification_checklist_json" FROM "site_qualifications" WHERE "url_id" = ? LIMIT 1',
-      urlId,
-    ),
-    prisma.$queryRawUnsafe<any[]>(
-      'SELECT "observation_key", "title", "detail", "severity", "source" FROM "site_observations" WHERE "url_id" = ? ORDER BY "id" ASC',
-      urlId,
-    ),
+    prisma.$queryRaw<any[]>`
+      SELECT "positioning", "abandon_reason", "main_observation_key", "verification_checklist_json"
+      FROM "site_qualifications"
+      WHERE "url_id" = ${urlId}
+      LIMIT 1
+    `,
+    prisma.$queryRaw<any[]>`
+      SELECT "observation_key", "title", "detail", "severity", "source"
+      FROM "site_observations"
+      WHERE "url_id" = ${urlId}
+      ORDER BY "id" ASC
+    `,
   ]);
 
   const qualification = qualificationRows[0] || null;
