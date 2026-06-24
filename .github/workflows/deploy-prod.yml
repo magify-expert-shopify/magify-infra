@@ -63,25 +63,11 @@ jobs:
           tags: ghcr.io/${{ env.OWNER }}/${{ matrix.package || matrix.image }}:latest
 
   deploy:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, arm64, raspberry]
     needs: build
 
-    env:
-      RASPBERRY_HOST: ${{ secrets.RASPBERRY_HOST || '192.168.1.91' }}
-      RASPBERRY_USER: ${{ secrets.RASPBERRY_USER || 'admin' }}
-
     steps:
-      - name: Configure SSH
-        run: |
-          if [ -z "${{ secrets.RASPBERRY_SSH_KEY }}" ]; then
-            echo "Missing secret: RASPBERRY_SSH_KEY"
-            exit 1
-          fi
-          mkdir -p ~/.ssh
-          printf '%s\n' "${{ secrets.RASPBERRY_SSH_KEY }}" > ~/.ssh/magify_raspberry
-          chmod 600 ~/.ssh/magify_raspberry
-          ssh-keyscan -H "$RASPBERRY_HOST" >> ~/.ssh/known_hosts
+      - uses: actions/checkout@v4
 
       - name: Deploy on Raspberry
-        run: |
-          ssh -i ~/.ssh/magify_raspberry -o IdentitiesOnly=yes "$RASPBERRY_USER@$RASPBERRY_HOST" "bash -lc 'set -euo pipefail; cd /home/$RASPBERRY_USER/apps/magify-apps && git fetch origin main && git reset --hard origin/main && bash infra/scripts/deploy.sh'"
+        run: bash infra/scripts/deploy.sh
