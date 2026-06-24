@@ -15,6 +15,7 @@ $BaseDir = "$env:USERPROFILE\pgadmin-docker"
 $ServersJson = "$BaseDir\servers.json"
 $PgPassFile = "$BaseDir\pgpass"
 $PgAdminVolume = "pgadmin-data"
+$NetworkName = "magify-network"
 
 New-Item -ItemType Directory -Force -Path $BaseDir | Out-Null
 
@@ -46,8 +47,14 @@ $pgPassContent = "$RaspberryHost`:$RaspberryDbPort`:$RaspberryDbName`:$Raspberry
 docker rm -f pgadmin 2>$null
 docker volume rm -f $PgAdminVolume 2>$null
 
+$networkExists = docker network ls --filter "name=^${NetworkName}$" --format '{{.Name}}'
+if ($networkExists -ne $NetworkName) {
+  docker network create $NetworkName | Out-Null
+}
+
 docker run -d `
   --name pgadmin `
+  --network $NetworkName `
   -p "${PgAdminPort}:80" `
   -e PGADMIN_DEFAULT_EMAIL="$PgAdminEmail" `
   -e PGADMIN_DEFAULT_PASSWORD="$PgAdminPassword" `

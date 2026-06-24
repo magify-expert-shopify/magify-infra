@@ -1,125 +1,367 @@
+param(
+  [ValidateSet('Windows', 'Raspberry')]
+  [string]$Target = 'Windows',
+
+  [string]$RaspberryHost = $(if ($env:RASPBERRY_HOST) { $env:RASPBERRY_HOST } else { '192.168.1.91' }),
+  [string]$RaspberryUser = $(if ($env:RASPBERRY_USER) { $env:RASPBERRY_USER } else { 'admin' }),
+  [string]$SshKeyPath,
+  [ValidateSet('prod', 'dev')]
+  [string]$Instance = 'prod',
+  [switch]$SkipProxyConfiguration
+)
+
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $repoRoot = (Resolve-Path (Join-Path $scriptDir '..\..')).Path
-$sshKeyPath = Join-Path $repoRoot 'infra\ssh\raspberry'
 
-$RaspberryHost = '192.168.1.91'
-$RaspberryUser = 'admin'
-$RemoteBaseDir = '/home/admin/apps/magify-nginx-proxy-manager'
-$RemoteComposeFile = "$RemoteBaseDir/docker-compose.yml"
-$ProxyManagerContainerName = 'magify-nginx-proxy-manager'
-$ProxyManagerImage = 'jc21/nginx-proxy-manager:latest'
-$ProxyManagerApiBaseUrl = "http://${RaspberryHost}:81"
+if ([string]::IsNullOrWhiteSpace($SshKeyPath)) {
+  $SshKeyPath = Join-Path $repoRoot 'infra\ssh\raspberry'
+}
 
-$DesiredAdminEmail = 'admin@magify.com'
-$DesiredAdminPassword = 'brunstad'
-$FallbackAdminEmail = 'admin@example.com'
-$FallbackAdminPassword = 'changeme'
+$imageName = 'jc21/nginx-proxy-manager:latest'
+$networkName = 'magify-network'
+$dashboardPort = 81
+$httpPort = 80
+$httpsPort = 443
+$timeZone = 'Europe/Bucharest'
 
-$ProxyHosts = @(
-  @{
-    Name = 'www.magify.local'
-    ForwardHost = 'blog-web'
-    ForwardPort = 30000
-  },
-  @{
-    Name = 'admin.magify.local'
-    ForwardHost = $RaspberryHost
-    ForwardPort = 81
-  },
-  @{
-    Name = 'blog.magify.local'
-    ForwardHost = 'blog-web'
-    ForwardPort = 30000
-  },
-  @{
-    Name = 'blog-api.magify.local'
-    ForwardHost = 'blog-api'
-    ForwardPort = 30000
-  },
-  @{
-    Name = 'prospection.magify.local'
-    ForwardHost = 'prospection-web'
-    ForwardPort = 30000
-  },
-  @{
-    Name = 'prospection-api.magify.local'
-    ForwardHost = 'prospection-api'
-    ForwardPort = 30000
-  },
-  @{
-    Name = 'social.magify.local'
-    ForwardHost = 'social-web'
-    ForwardPort = 30000
-  },
-  @{
-    Name = 'social-api.magify.local'
-    ForwardHost = 'social-api'
-    ForwardPort = 30000
+$adminEmail = if ($env:NPM_ADMIN_EMAIL) { $env:NPM_ADMIN_EMAIL } else { 'admin@magify.com' }
+$adminPassword = if ($env:NPM_ADMIN_PASSWORD) { $env:NPM_ADMIN_PASSWORD } else { 'brunstad' }
+$fallbackAdminEmail = 'admin@example.com'
+$fallbackAdminPassword = 'changeme'
+$legacyAdminEmail = 'tomderudder@gmail.com'
+$legacyAdminPassword = 'brunstad'
+
+function Assert-Command {
+  param([Parameter(Mandatory)][string]$Name)
+
+  if (-not (Get-Command $Name -ErrorAction SilentlyContinue)) {
+    throw "La commande '$Name' est requise mais introuvable."
   }
-)
+}
 
-function Invoke-RaspberrySsh {
+function Invoke-ExternalCommand {
   param(
-    [Parameter(Mandatory = $true)]
-    [string]$Command
+    [Parameter(Mandatory)][string]$FilePath,
+    [Parameter(Mandatory)][string[]]$Arguments
   )
 
-  & ssh -i $sshKeyPath -o IdentitiesOnly=yes "$RaspberryUser@$RaspberryHost" $Command
-
+  $commandOutput = & $FilePath @Arguments
   if ($LASTEXITCODE -ne 0) {
-    throw "Commande SSH échouée: ssh $RaspberryUser@$RaspberryHost $Command"
+    throw "Commande echouee ($LASTEXITCODE): $FilePath $($Arguments -join ' ')"
   }
+
+  if ($commandOutput) {
+    $commandOutput | ForEach-Object { Write-Host $_ }
+  }
+}
+
+function Invoke-RaspberrySsh {
+  param([Parameter(Mandatory)][string]$Command)
+
+  Invoke-ExternalCommand -FilePath 'ssh' -Arguments @(
+    '-i', $SshKeyPath,
+    '-o', 'IdentitiesOnly=yes',
+    "$RaspberryUser@$RaspberryHost",
+    $Command
+  )
 }
 
 function Invoke-RaspberryScp {
   param(
-    [Parameter(Mandatory = $true)]
-    [string]$LocalPath,
-    [Parameter(Mandatory = $true)]
-    [string]$RemotePath
+    [Parameter(Mandatory)][string]$LocalPath,
+    [Parameter(Mandatory)][string]$RemotePath
   )
 
-  & scp -i $sshKeyPath -o IdentitiesOnly=yes $LocalPath "${RaspberryUser}@${RaspberryHost}:$RemotePath"
+  Invoke-ExternalCommand -FilePath 'scp' -Arguments @(
+    '-i', $SshKeyPath,
+    '-o', 'IdentitiesOnly=yes',
+    $LocalPath,
+    "${RaspberryUser}@${RaspberryHost}:$RemotePath"
+  )
+}
 
-  if ($LASTEXITCODE -ne 0) {
-    throw "Copie SCP échouée: $LocalPath -> $RemotePath"
+function Start-WindowsProxyManager {
+  Assert-Command -Name 'docker'
+
+  $containerName = "magify-nginx-proxy-manager-$Instance"
+  $backendContainerName = "magify-dashboard-$Instance"
+  $baseDir = Join-Path $env:USERPROFILE $containerName
+  $dataDir = Join-Path $baseDir 'data'
+  $letsEncryptDir = Join-Path $baseDir 'letsencrypt'
+  $defaultHostConfigPath = Join-Path $baseDir 'default-host.conf'
+
+  New-Item -ItemType Directory -Force -Path $dataDir, $letsEncryptDir | Out-Null
+
+  $defaultHostConfig = @"
+server {
+  listen 80 default_server;
+  listen [::]:80 default_server;
+  server_name _;
+
+  resolver 127.0.0.11 valid=10s ipv6=off;
+  set `$forward_scheme "http";
+  set `$server "${backendContainerName}";
+  set `$port "80";
+  set `$magify_backend "http://${backendContainerName}:80";
+
+  location / {
+    proxy_set_header Host `$host;
+    proxy_set_header X-Real-IP `$remote_addr;
+    proxy_set_header X-Forwarded-For `$proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto `$scheme;
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade `$http_upgrade;
+    proxy_set_header Connection "upgrade";
+    proxy_pass `$magify_backend;
   }
+}
+"@
+  [System.IO.File]::WriteAllText(
+    $defaultHostConfigPath,
+    $defaultHostConfig,
+    [System.Text.UTF8Encoding]::new($false)
+  )
+
+  $networkExists = docker network ls --filter "name=^${networkName}$" --format '{{.Name}}'
+  if ($networkExists -ne $networkName) {
+    Invoke-ExternalCommand -FilePath 'docker' -Arguments @('network', 'create', $networkName)
+  }
+
+  $backendContainer = docker ps -a --filter "name=^/${backendContainerName}$" --format '{{.Names}}'
+  if ($backendContainer -eq $backendContainerName) {
+    $backendNetworks = docker inspect $backendContainerName --format '{{range $name, $_ := .NetworkSettings.Networks}}{{$name}} {{end}}'
+    if (($backendNetworks -split '\s+') -notcontains $networkName) {
+      Invoke-ExternalCommand -FilePath 'docker' -Arguments @('network', 'connect', $networkName, $backendContainerName)
+    }
+  } else {
+    Write-Warning "Backend absent: $backendContainerName. La page par defaut retournera 502 tant que ce conteneur ne sera pas demarre."
+  }
+
+  # Les instances locales utilisent les memes ports et sont donc mutuellement exclusives.
+  $otherInstance = if ($Instance -eq 'prod') { 'dev' } else { 'prod' }
+  $otherContainerName = "magify-nginx-proxy-manager-$otherInstance"
+  $otherContainer = docker ps -a --filter "name=^/${otherContainerName}$" --format '{{.Names}}'
+  if ($otherContainer -eq $otherContainerName) {
+    Write-Host "Suppression de l'instance locale incompatible: $otherContainerName"
+    Invoke-ExternalCommand -FilePath 'docker' -Arguments @('rm', '-f', $otherContainerName)
+  }
+
+  $existingContainer = docker ps -a --filter "name=^/${containerName}$" --format '{{.Names}}'
+  if ($existingContainer -eq $containerName) {
+    Invoke-ExternalCommand -FilePath 'docker' -Arguments @('rm', '-f', $containerName)
+  }
+
+  Invoke-ExternalCommand -FilePath 'docker' -Arguments @(
+    'run', '-d',
+    '--name', $containerName,
+    '--restart', 'unless-stopped',
+    '--network', $networkName,
+    '--add-host', 'host.docker.internal:host-gateway',
+    '-p', "${httpPort}:80",
+    '-p', "${dashboardPort}:81",
+    '-p', "${httpsPort}:443",
+    '-e', "TZ=$timeZone",
+    '-v', "${dataDir}:/data",
+    '-v', "${letsEncryptDir}:/etc/letsencrypt",
+    '-v', "${defaultHostConfigPath}:/etc/nginx/conf.d/default.conf",
+    $imageName
+  )
+
+  return @{
+    ApiBaseUrl = "http://127.0.0.1:$dashboardPort"
+    ContainerName = $containerName
+    ProxyHosts = if ($Instance -eq 'dev') {
+      @(
+        @{ Name = 'www.dev.magify.local'; ForwardHost = 'magify-dashboard-dev'; ForwardPort = 80 },
+        @{ Name = 'admin.dev.magify.local'; ForwardHost = $containerName; ForwardPort = 81 },
+        @{ Name = 'db.dev.magify.local'; ForwardHost = 'host.docker.internal'; ForwardPort = 5050 },
+        @{ Name = 'blog.dev.magify.local'; ForwardHost = 'host.docker.internal'; ForwardPort = 3001 },
+        @{ Name = 'blog-api.dev.magify.local'; ForwardHost = 'host.docker.internal'; ForwardPort = 4001 },
+        @{ Name = 'prospection.dev.magify.local'; ForwardHost = 'host.docker.internal'; ForwardPort = 3002 },
+        @{ Name = 'prospection-api.dev.magify.local'; ForwardHost = 'host.docker.internal'; ForwardPort = 4002 },
+        @{ Name = 'social.dev.magify.local'; ForwardHost = 'host.docker.internal'; ForwardPort = 3003 },
+        @{ Name = 'social-api.dev.magify.local'; ForwardHost = 'host.docker.internal'; ForwardPort = 4003 }
+      )
+    } else {
+      @(
+        @{ Name = 'www.magify.local'; ForwardHost = 'magify-dashboard-prod'; ForwardPort = 80 },
+        @{ Name = 'admin.magify.local'; ForwardHost = $containerName; ForwardPort = 81 },
+        @{ Name = 'blog.magify.local'; ForwardHost = 'host.docker.internal'; ForwardPort = 3001 },
+        @{ Name = 'blog-api.magify.local'; ForwardHost = 'magify-blog-api-prod'; ForwardPort = 4001 },
+        @{ Name = 'prospection.magify.local'; ForwardHost = 'host.docker.internal'; ForwardPort = 3002 },
+        @{ Name = 'prospection-api.magify.local'; ForwardHost = 'magify-prospection-api-prod'; ForwardPort = 4002 },
+        @{ Name = 'social.magify.local'; ForwardHost = 'host.docker.internal'; ForwardPort = 3003 },
+        @{ Name = 'social-api.magify.local'; ForwardHost = 'magify-social-api-prod'; ForwardPort = 4003 }
+      )
+    }
+  }
+}
+
+function Start-RaspberryProxyManager {
+  Assert-Command -Name 'ssh'
+  Assert-Command -Name 'scp'
+
+  if (-not (Test-Path -LiteralPath $SshKeyPath -PathType Leaf)) {
+    throw "Cle SSH introuvable: $SshKeyPath"
+  }
+
+  $containerName = 'magify-nginx-proxy-manager'
+  $remoteBaseDir = "/home/$RaspberryUser/apps/magify-nginx-proxy-manager"
+  $remoteComposeFile = "$remoteBaseDir/docker-compose.yml"
+  $composeContent = @"
+services:
+  nginx-proxy-manager:
+    image: $imageName
+    container_name: $containerName
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "81:81"
+      - "443:443"
+    environment:
+      TZ: $timeZone
+    volumes:
+      - npm-data:/data
+      - npm-letsencrypt:/etc/letsencrypt
+    networks:
+      - $networkName
+
+volumes:
+  npm-data:
+  npm-letsencrypt:
+
+networks:
+  ${networkName}:
+    external: true
+"@
+
+  $tempComposeFile = Join-Path ([System.IO.Path]::GetTempPath()) "magify-npm-$([guid]::NewGuid().ToString('N')).yml"
+  try {
+    [System.IO.File]::WriteAllText(
+      $tempComposeFile,
+      $composeContent,
+      [System.Text.UTF8Encoding]::new($false)
+    )
+
+    Invoke-RaspberrySsh -Command "mkdir -p '$remoteBaseDir'"
+    Invoke-RaspberryScp -LocalPath $tempComposeFile -RemotePath $remoteComposeFile
+    Invoke-RaspberrySsh -Command "docker network inspect $networkName >/dev/null 2>&1 || docker network create $networkName >/dev/null; docker compose -f '$remoteComposeFile' up -d"
+  } finally {
+    Remove-Item -LiteralPath $tempComposeFile -Force -ErrorAction SilentlyContinue
+  }
+
+  return @{
+    ApiBaseUrl = "http://${RaspberryHost}:$dashboardPort"
+    ContainerName = $containerName
+    ProxyHosts = @(
+      @{ Name = 'www.magify.local'; ForwardHost = 'dashboard'; ForwardPort = 80 },
+      @{ Name = 'admin.magify.local'; ForwardHost = $RaspberryHost; ForwardPort = 81 },
+      @{ Name = 'blog.magify.local'; ForwardHost = 'blog-web'; ForwardPort = 30000 },
+      @{ Name = 'blog-api.magify.local'; ForwardHost = 'blog-api'; ForwardPort = 30000 },
+      @{ Name = 'prospection.magify.local'; ForwardHost = 'prospection-web'; ForwardPort = 30000 },
+      @{ Name = 'prospection-api.magify.local'; ForwardHost = 'prospection-api'; ForwardPort = 30000 },
+      @{ Name = 'social.magify.local'; ForwardHost = 'social-web'; ForwardPort = 30000 },
+      @{ Name = 'social-api.magify.local'; ForwardHost = 'social-api'; ForwardPort = 30000 }
+    )
+  }
+}
+
+function Invoke-NpmRequest {
+  param(
+    [Parameter(Mandatory)][string]$ApiBaseUrl,
+    [Parameter(Mandatory)][string]$Method,
+    [Parameter(Mandatory)][string]$Path,
+    [string]$Token,
+    [object]$Body
+  )
+
+  $headers = @{}
+  if ($Token) {
+    $headers.Authorization = "Bearer $Token"
+  }
+
+  $parameters = @{
+    Uri = "$ApiBaseUrl$Path"
+    Method = $Method
+    Headers = $headers
+    TimeoutSec = 30
+  }
+
+  if ($null -ne $Body) {
+    $parameters.ContentType = 'application/json'
+    $parameters.Body = $Body | ConvertTo-Json -Depth 10 -Compress
+  }
+
+  Invoke-RestMethod @parameters
 }
 
 function Wait-ForProxyManagerApi {
   param(
-    [int]$TimeoutSeconds = 120
+    [Parameter(Mandatory)][string]$ApiBaseUrl,
+    [int]$TimeoutSeconds = 180
   )
 
   $deadline = (Get-Date).AddSeconds($TimeoutSeconds)
-
-  while ((Get-Date) -lt $deadline) {
+  do {
     try {
-      $response = Invoke-WebRequest -Uri $ProxyManagerApiBaseUrl -Method Get -TimeoutSec 5
+      $response = Invoke-WebRequest -UseBasicParsing -Uri $ApiBaseUrl -TimeoutSec 5
       if ($response.StatusCode -ge 200 -and $response.StatusCode -lt 500) {
         return
       }
     } catch {
       Start-Sleep -Seconds 3
-      continue
     }
+  } while ((Get-Date) -lt $deadline)
 
-    Start-Sleep -Seconds 3
-  }
-
-  throw "Nginx Proxy Manager n'a pas répondu sur $ProxyManagerApiBaseUrl dans le délai imparti."
+  throw "Nginx Proxy Manager ne repond pas sur $ApiBaseUrl."
 }
 
-function ConvertTo-ProxyManagerBody {
+function Get-NpmToken {
   param(
-    [Parameter(Mandatory = $true)]
-    [hashtable]$ProxyHost
+    [Parameter(Mandatory)][string]$ApiBaseUrl,
+    [Parameter(Mandatory)][string]$Email,
+    [Parameter(Mandatory)][string]$Password
   )
 
-  @{
+  $response = Invoke-NpmRequest -ApiBaseUrl $ApiBaseUrl -Method POST -Path '/api/tokens' -Body @{
+    identity = $Email
+    secret = $Password
+  }
+
+  if ($response.token) { return [string]$response.token }
+  if ($response.access_token) { return [string]$response.access_token }
+  throw 'La reponse de connexion NPM ne contient pas de token.'
+}
+
+function Get-NpmProxyHosts {
+  param(
+    [Parameter(Mandatory)][string]$ApiBaseUrl,
+    [Parameter(Mandatory)][string]$Token
+  )
+
+  $response = Invoke-NpmRequest -ApiBaseUrl $ApiBaseUrl -Method GET -Path '/api/nginx/proxy-hosts' -Token $Token
+  $dataProperty = $response.PSObject.Properties['data']
+  if ($dataProperty -and $null -ne $dataProperty.Value) {
+    return @($dataProperty.Value)
+  }
+  return @($response)
+}
+
+function Set-NpmProxyHost {
+  param(
+    [Parameter(Mandatory)][string]$ApiBaseUrl,
+    [Parameter(Mandatory)][string]$Token,
+    [Parameter(Mandatory)][hashtable]$ProxyHost
+  )
+
+  $existing = Get-NpmProxyHosts -ApiBaseUrl $ApiBaseUrl -Token $Token | Where-Object {
+    $_.domain_names -contains $ProxyHost.Name
+  } | Select-Object -First 1
+
+  $body = @{
     domain_names = @($ProxyHost.Name)
     forward_scheme = 'http'
     forward_host = $ProxyHost.ForwardHost
@@ -129,198 +371,59 @@ function ConvertTo-ProxyManagerBody {
     ssl_forced = $false
     caching_enabled = $false
     block_exploits = $true
-    advanced_config = ''
-    meta = @{
-      letsencrypt_agree = $false
-      dns_challenge = $false
-    }
     allow_websocket_upgrade = $true
-    http2_support = $false
-    forward_host_header = 'preserve'
-    preserve_path = $false
+    advanced_config = ''
     enabled = $true
+    meta = @{ letsencrypt_agree = $false; dns_challenge = $false }
+  }
+
+  if ($existing -and $existing.PSObject.Properties['id'] -and $existing.id) {
+    Write-Host "Mise a jour: $($ProxyHost.Name) -> $($ProxyHost.ForwardHost):$($ProxyHost.ForwardPort)"
+    Invoke-NpmRequest -ApiBaseUrl $ApiBaseUrl -Method PUT -Path "/api/nginx/proxy-hosts/$($existing.id)" -Token $Token -Body $body | Out-Null
+  } else {
+    Write-Host "Creation: $($ProxyHost.Name) -> $($ProxyHost.ForwardHost):$($ProxyHost.ForwardPort)"
+    Invoke-NpmRequest -ApiBaseUrl $ApiBaseUrl -Method POST -Path '/api/nginx/proxy-hosts' -Token $Token -Body $body | Out-Null
   }
 }
 
-function Invoke-NpmRequest {
-  param(
-    [Parameter(Mandatory = $true)]
-    [string]$Method,
-    [Parameter(Mandatory = $true)]
-    [string]$Path,
-    [string]$Token,
-    [object]$Body
-  )
+Write-Host "Installation de Nginx Proxy Manager - cible: $Target"
 
-  $headers = @{}
-
-  if ($Token) {
-    $headers.Authorization = "Bearer $Token"
-  }
-
-  $invokeParams = @{
-    Uri = "$ProxyManagerApiBaseUrl$Path"
-    Method = $Method
-    Headers = $headers
-    TimeoutSec = 30
-  }
-
-  if ($null -ne $Body) {
-    $invokeParams.ContentType = 'application/json'
-    $invokeParams.Body = ($Body | ConvertTo-Json -Depth 10 -Compress)
-  }
-
-  return Invoke-RestMethod @invokeParams
+$installation = if ($Target -eq 'Windows') {
+  Start-WindowsProxyManager
+} else {
+  Start-RaspberryProxyManager
 }
 
-function Get-NpmToken {
-  param(
-    [Parameter(Mandatory = $true)]
-    [string]$Email,
-    [Parameter(Mandatory = $true)]
-    [string]$Password
-  )
+Write-Host "Attente de Nginx Proxy Manager sur $($installation.ApiBaseUrl)..."
+Wait-ForProxyManagerApi -ApiBaseUrl $installation.ApiBaseUrl
 
-  $response = Invoke-NpmRequest -Method 'POST' -Path '/api/tokens' -Body @{
-    identity = $Email
-    secret = $Password
-  }
-
-  if ($response.token) {
-    return [string]$response.token
-  }
-
-  if ($response.access_token) {
-    return [string]$response.access_token
-  }
-
-  throw 'La réponse de connexion NPM ne contient pas de token.'
-}
-
-function Get-NpmProxyHosts {
-  param(
-    [Parameter(Mandatory = $true)]
-    [string]$Token
-  )
-
-  try {
-    $response = Invoke-NpmRequest -Method 'GET' -Path '/api/nginx/proxy-hosts' -Token $Token
-    if ($response.data) {
-      return @($response.data)
+if (-not $SkipProxyConfiguration) {
+  $token = $null
+  foreach ($credentials in @(
+    @{ Email = $adminEmail; Password = $adminPassword },
+    @{ Email = $legacyAdminEmail; Password = $legacyAdminPassword },
+    @{ Email = $fallbackAdminEmail; Password = $fallbackAdminPassword }
+  )) {
+    try {
+      $token = Get-NpmToken -ApiBaseUrl $installation.ApiBaseUrl -Email $credentials.Email -Password $credentials.Password
+      Write-Host "Connexion NPM reussie avec $($credentials.Email)."
+      break
+    } catch {
+      continue
     }
+  }
 
-    if ($response -is [System.Array]) {
-      return @($response)
+  if ($token) {
+    foreach ($proxyHost in $installation.ProxyHosts) {
+      Set-NpmProxyHost -ApiBaseUrl $installation.ApiBaseUrl -Token $token -ProxyHost $proxyHost
     }
-  } catch {
-    return @()
-  }
-
-  return @()
-}
-
-function Upsert-NpmProxyHost {
-  param(
-    [Parameter(Mandatory = $true)]
-    [string]$Token,
-    [Parameter(Mandatory = $true)]
-    [hashtable]$ProxyHost
-  )
-
-  $desiredDomain = $ProxyHost.Name.Trim()
-  $existing = Get-NpmProxyHosts -Token $Token | Where-Object {
-    $_.domain_names -and ($_.domain_names -contains $desiredDomain)
-  } | Select-Object -First 1
-
-  $body = ConvertTo-ProxyManagerBody -ProxyHost $ProxyHost
-
-  if ($existing -and $existing.id) {
-    Write-Host "Mise à jour du proxy: $desiredDomain"
-    Invoke-NpmRequest -Method 'PUT' -Path "/api/nginx/proxy-hosts/$($existing.id)" -Token $Token -Body $body | Out-Null
-    return
-  }
-
-  Write-Host "Création du proxy: $desiredDomain"
-  Invoke-NpmRequest -Method 'POST' -Path '/api/nginx/proxy-hosts' -Token $Token -Body $body | Out-Null
-}
-
-Write-Host "Préparation de Nginx Proxy Manager sur le Raspberry..."
-Write-Host "SSH key: $sshKeyPath"
-
-$composeContent = @"
-services:
-  nginx-proxy-manager:
-    image: $ProxyManagerImage
-    container_name: $ProxyManagerContainerName
-    restart: unless-stopped
-    ports:
-      - "80:80"
-      - "81:81"
-      - "443:443"
-    environment:
-      TZ: Europe/Bucharest
-    volumes:
-      - npm-data:/data
-      - npm-letsencrypt:/etc/letsencrypt
-    networks:
-      - magify-network
-
-volumes:
-  npm-data:
-  npm-letsencrypt:
-
-networks:
-  magify-network:
-    external: true
-"@
-
-$tempComposeFile = Join-Path $env:TEMP 'magify-nginx-proxy-manager-docker-compose.yml'
-[System.IO.File]::WriteAllText(
-  $tempComposeFile,
-  $composeContent,
-  (New-Object System.Text.UTF8Encoding($false))
-)
-
-Invoke-RaspberrySsh "mkdir -p '$RemoteBaseDir'"
-Invoke-RaspberryScp -LocalPath $tempComposeFile -RemotePath $RemoteComposeFile
-
-Invoke-RaspberrySsh @"
-if ! docker network inspect magify-network >/dev/null 2>&1; then
-  docker network create magify-network >/dev/null
-fi
-docker rm -f $ProxyManagerContainerName >/dev/null 2>&1 || true
-docker compose -f $RemoteComposeFile up -d
-"@
-
-Write-Host "Attente de l'API NPM sur $ProxyManagerApiBaseUrl..."
-Wait-ForProxyManagerApi
-
-$token = $null
-$candidateCredentials = @(
-  @{ Email = $DesiredAdminEmail; Password = $DesiredAdminPassword },
-  @{ Email = $FallbackAdminEmail; Password = $FallbackAdminPassword }
-)
-
-foreach ($candidate in $candidateCredentials) {
-  try {
-    $token = Get-NpmToken -Email $candidate.Email -Password $candidate.Password
-    Write-Host "Connexion NPM réussie avec $($candidate.Email)"
-    break
-  } catch {
-    continue
+  } else {
+    Write-Warning "Le conteneur est demarre, mais les proxy hosts n'ont pas ete configures."
+    Write-Warning "Termine l'initialisation sur $($installation.ApiBaseUrl), puis relance le script."
   }
 }
 
-if (-not $token) {
-  throw "Impossible de se connecter à Nginx Proxy Manager. Vérifie le compte admin ou ouvre l'interface une première fois."
-}
-
-foreach ($proxyHost in $ProxyHosts) {
-  Upsert-NpmProxyHost -Token $token -ProxyHost $proxyHost
-}
-
-Write-Host ""
-Write-Host "Nginx Proxy Manager est prêt."
-Write-Host "Dashboard: http://${RaspberryHost}:81"
-Write-Host "Compte essayé: $DesiredAdminEmail / $DesiredAdminPassword"
-Write-Host "Si le compte n'existait pas, l'alternative par défaut a été tentée: $FallbackAdminEmail / $FallbackAdminPassword"
+Write-Host ''
+Write-Host "Nginx Proxy Manager est pret sur $Target."
+Write-Host "Conteneur: $($installation.ContainerName)"
+Write-Host "Interface: $($installation.ApiBaseUrl)"

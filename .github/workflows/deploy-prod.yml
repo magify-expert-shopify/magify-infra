@@ -24,6 +24,8 @@ jobs:
             dockerfile: ./apps/blog-api/Dockerfile.prod
           - image: blog-web
             dockerfile: ./apps/blog-web/Dockerfile.prod
+          - image: dashboard
+            dockerfile: ./apps/dashboard/Dockerfile.prod
 
     steps:
       - uses: actions/checkout@v4

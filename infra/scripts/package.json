@@ -1,0 +1,15 @@
+{
+  "name": "@magify/infra-scripts",
+  "private": true,
+  "scripts": {
+    "import-dbs-to-raspberry": "powershell -NoProfile -ExecutionPolicy Bypass -File ./import-dbs-to-raspberry.ps1",
+    "install-nginx-proxy-manager-dev": "powershell -NoProfile -ExecutionPolicy Bypass -File ./install-nginx-proxy-manager-dev.ps1",
+    "install-nginx-proxy-manager": "powershell -NoProfile -ExecutionPolicy Bypass -File ./install-nginx-proxy-manager.ps1",
+    "install-pgadmin": "powershell -NoProfile -ExecutionPolicy Bypass -File ./install-pgadmin.ps1",
+    "load-dotenv": "powershell -NoProfile -ExecutionPolicy Bypass -File ./load-dotenv.ps1",
+    "set-windows-host": "powershell -NoProfile -ExecutionPolicy Bypass -File ./set-windows-host.ps1",
+    "start-nginx-proxy-manager": "powershell -NoProfile -ExecutionPolicy Bypass -File ./start-nginx-proxy-manager.ps1 -Instance prod",
+    "start-nginx-proxy-manager-dev": "powershell -NoProfile -ExecutionPolicy Bypass -File ./start-nginx-proxy-manager.ps1 -Instance dev",
+    "switch-prod-target": "powershell -NoProfile -ExecutionPolicy Bypass -File ./switch-prod-target.ps1"
+  }
+}
