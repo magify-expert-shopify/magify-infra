@@ -42,17 +42,17 @@ jobs:
             package: magify-social-api
 
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v4
 
-      - uses: docker/setup-buildx-action@v4
+      - uses: docker/setup-buildx-action@v3
 
-      - uses: docker/login-action@v4
+      - uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - uses: docker/build-push-action@v7
+      - uses: docker/build-push-action@v6
         with:
           context: .
           file: ${{ matrix.dockerfile }}
@@ -61,3 +61,27 @@ jobs:
           cache-to: type=gha,mode=max,scope=${{ matrix.package || matrix.image }}
           push: true
           tags: ghcr.io/${{ env.OWNER }}/${{ matrix.package || matrix.image }}:latest
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+
+    env:
+      RASPBERRY_HOST: ${{ secrets.RASPBERRY_HOST || '192.168.1.91' }}
+      RASPBERRY_USER: ${{ secrets.RASPBERRY_USER || 'admin' }}
+
+    steps:
+      - name: Configure SSH
+        run: |
+          if [ -z "${{ secrets.RASPBERRY_SSH_KEY }}" ]; then
+            echo "Missing secret: RASPBERRY_SSH_KEY"
+            exit 1
+          fi
+          mkdir -p ~/.ssh
+          printf '%s\n' "${{ secrets.RASPBERRY_SSH_KEY }}" > ~/.ssh/magify_raspberry
+          chmod 600 ~/.ssh/magify_raspberry
+          ssh-keyscan -H "$RASPBERRY_HOST" >> ~/.ssh/known_hosts
+
+      - name: Deploy on Raspberry
+        run: |
+          ssh -i ~/.ssh/magify_raspberry -o IdentitiesOnly=yes "$RASPBERRY_USER@$RASPBERRY_HOST" "bash -lc 'set -euo pipefail; cd /home/$RASPBERRY_USER/apps/magify-apps && git fetch origin main && git reset --hard origin/main && bash infra/scripts/deploy.sh'"
