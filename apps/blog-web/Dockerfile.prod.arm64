@@ -1,0 +1,30 @@
+FROM node:22-alpine AS builder
+
+WORKDIR /app
+
+RUN corepack enable
+
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json ./
+COPY apps ./apps
+# COPY packages ./packages
+
+RUN pnpm install --frozen-lockfile
+
+WORKDIR /app/apps/blog-web
+
+RUN pnpm build
+
+
+FROM node:22-alpine AS runner
+
+WORKDIR /app
+
+ENV NODE_ENV=production
+ENV NITRO_HOST=0.0.0.0
+ENV NITRO_PORT=30000
+
+COPY --from=builder /app/apps/blog-web/.output ./.output
+
+EXPOSE 30000
+
+CMD ["node", ".output/server/index.mjs"]
