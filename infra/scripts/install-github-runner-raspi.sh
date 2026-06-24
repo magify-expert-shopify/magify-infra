@@ -148,21 +148,29 @@ if [[ ! -f "$RUNNER_HOME/.runner" ]]; then
   "
 
   bash "$RUNNER_HOME/bin/installdependencies.sh" || true
-
-  sudo -u "$TARGET_USER" bash -lc "
-    cd '$RUNNER_HOME'
-    ./config.sh \
-      --unattended \
-      --url '$REPO_URL' \
-      --token '$RUNNER_TOKEN' \
-      --name '$RUNNER_NAME' \
-      --labels '$RUNNER_LABELS' \
-      --work _work \
-      --replace
-  "
 else
-  echo "Runner déjà configuré dans $RUNNER_HOME. Configuration ignorée."
+  echo "Runner déjà présent dans $RUNNER_HOME. Réutilisation de l'installation existante."
 fi
+
+if [[ -x "$RUNNER_HOME/svc.sh" ]]; then
+  if systemctl list-unit-files --type=service --no-legend --no-pager 2>/dev/null | grep -q '^actions\.runner\.'; then
+    echo "Service systemd runner déjà présent. Réinitialisation avant reconfiguration."
+    "$RUNNER_HOME/svc.sh" stop || true
+    "$RUNNER_HOME/svc.sh" uninstall || true
+  fi
+fi
+
+sudo -u "$TARGET_USER" bash -lc "
+  cd '$RUNNER_HOME'
+  ./config.sh \
+    --unattended \
+    --url '$REPO_URL' \
+    --token '$RUNNER_TOKEN' \
+    --name '$RUNNER_NAME' \
+    --labels '$RUNNER_LABELS' \
+    --work _work \
+    --replace
+"
 
 # ============================================================
 # Installation en service systemd
