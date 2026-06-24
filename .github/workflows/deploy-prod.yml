@@ -24,6 +24,7 @@ jobs:
             dockerfile: ./apps/blog-api/Dockerfile.prod.arm64
           - image: blog-web
             dockerfile: ./apps/blog-web/Dockerfile.prod.arm64
+            package: magify-blog-web
           - image: dashboard
             dockerfile: ./apps/dashboard/Dockerfile.prod.arm64
 
@@ -46,4 +47,4 @@ jobs:
           file: ${{ matrix.dockerfile }}
           platforms: linux/arm64/v8
           push: true
-          tags: ghcr.io/${{ env.OWNER }}/${{ matrix.image }}:latest
+          tags: ghcr.io/${{ env.OWNER }}/${{ matrix.package || matrix.image }}:latest
