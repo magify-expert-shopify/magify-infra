@@ -46,5 +46,7 @@ jobs:
           context: .
           file: ${{ matrix.dockerfile }}
           platforms: linux/arm64/v8
+          cache-from: type=gha,scope=${{ matrix.package || matrix.image }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.package || matrix.image }}
           push: true
           tags: ghcr.io/${{ env.OWNER }}/${{ matrix.package || matrix.image }}:latest

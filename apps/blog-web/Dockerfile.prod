@@ -5,10 +5,18 @@ WORKDIR /app
 RUN corepack enable
 
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json ./
-COPY apps ./apps
+COPY apps/blog-api/package.json ./apps/blog-api/package.json
+COPY apps/blog-web/package.json ./apps/blog-web/package.json
+COPY apps/dashboard/package.json ./apps/dashboard/package.json
+COPY apps/prospection-api/package.json ./apps/prospection-api/package.json
+COPY apps/prospection-web/package.json ./apps/prospection-web/package.json
+COPY apps/social-api/package.json ./apps/social-api/package.json
+COPY apps/social-web/package.json ./apps/social-web/package.json
 # COPY packages ./packages
 
 RUN pnpm install --frozen-lockfile
+
+COPY apps/blog-web ./apps/blog-web
 
 WORKDIR /app/apps/blog-web
 
