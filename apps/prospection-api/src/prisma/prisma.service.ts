@@ -21,7 +21,7 @@ export class PrismaService
       throw new Error('DATABASE_URL is not defined');
     }
 
-    super();
+    super({});
   }
 
   async onModuleInit() {
