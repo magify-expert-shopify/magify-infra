@@ -67,7 +67,16 @@ echo "Script déploiement            : $DEPLOY_BIN"
 # ============================================================
 # Dépendances système
 # ============================================================
-apt-get update
+APT_UPDATE_CACHE_FILE="${APT_UPDATE_CACHE_FILE:-/var/tmp/install-github-runner-raspi.apt-update}"
+APT_UPDATE_MAX_AGE_SECONDS="${APT_UPDATE_MAX_AGE_SECONDS:-21600}"
+
+if [[ ! -f "$APT_UPDATE_CACHE_FILE" ]] || (( $(date +%s) - $(stat -c %Y "$APT_UPDATE_CACHE_FILE") > APT_UPDATE_MAX_AGE_SECONDS )); then
+  apt-get update
+  touch "$APT_UPDATE_CACHE_FILE"
+else
+  echo "apt-get update ignoré: cache récent."
+fi
+
 apt-get install -y \
   curl \
   jq \
