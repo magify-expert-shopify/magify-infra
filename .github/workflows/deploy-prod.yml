@@ -28,6 +28,15 @@ jobs:
             package: magify-blog-web
           - image: dashboard
             dockerfile: ./apps/dashboard/Dockerfile.prod.arm64
+          - image: prospection-api
+            dockerfile: ./apps/prospection-api/Dockerfile.prod.arm64
+            package: magify-prospection-api
+          - image: prospection-web
+            dockerfile: ./apps/prospection-web/Dockerfile.prod.arm64
+            package: magify-prospection-web
+          - image: social-web
+            dockerfile: ./apps/social-web/Dockerfile.prod.arm64
+            package: magify-social-web
           - image: social-api
             dockerfile: ./apps/social-api/Dockerfile.prod.arm64
 

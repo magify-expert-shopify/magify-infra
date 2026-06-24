@@ -1,0 +1,34 @@
+# syntax=docker/dockerfile:1.7
+
+FROM node:22-alpine AS builder
+
+WORKDIR /app
+
+RUN corepack enable
+
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json ./
+COPY apps/social-web/package.json ./apps/social-web/package.json
+
+RUN --mount=type=cache,id=pnpm-store-social-web,target=/root/.local/share/pnpm/store \
+    pnpm install --frozen-lockfile --filter ./apps/social-web...
+
+COPY apps/social-web ./apps/social-web
+
+WORKDIR /app/apps/social-web
+
+RUN pnpm build
+
+
+FROM node:22-alpine AS runner
+
+WORKDIR /app
+
+ENV NODE_ENV=production
+ENV NITRO_HOST=0.0.0.0
+ENV NITRO_PORT=30000
+
+COPY --from=builder /app/apps/social-web/.output ./.output
+
+EXPOSE 30000
+
+CMD ["node", ".output/server/index.mjs"]
