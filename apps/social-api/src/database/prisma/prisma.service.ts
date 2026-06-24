@@ -1,4 +1,5 @@
 import {
+  INestApplication,
   Injectable,
   Logger,
   OnModuleDestroy,
@@ -6,6 +7,8 @@ import {
 } from '@nestjs/common';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from 'generated/prisma/client';
+
+const DATABASE_URL = process.env.DATABASE_URL?.trim();
 
 @Injectable()
 export class PrismaService
@@ -15,24 +18,30 @@ export class PrismaService
   private readonly logger = new Logger(PrismaService.name);
 
   constructor() {
-    if (!process.env.DATABASE_URL) {
+    if (!DATABASE_URL) {
       throw new Error('DATABASE_URL is not defined');
     }
 
     super({
       adapter: new PrismaPg({
-        connectionString: process.env.DATABASE_URL,
+        connectionString: DATABASE_URL,
       }),
     });
   }
 
   async onModuleInit() {
     await this.$connect();
-    await this.verifyDatabaseConnection();
+    // await this.verifyDatabaseConnection();
   }
 
   async onModuleDestroy() {
     await this.$disconnect();
+  }
+
+  async enableShutdownHooks(app: INestApplication) {
+    (this as any).$on('beforeExit', async () => {
+      await app.close();
+    });
   }
 
   private async verifyDatabaseConnection() {
