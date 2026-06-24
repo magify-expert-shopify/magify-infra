@@ -27,6 +27,8 @@ jobs:
             package: magify-blog-web
           - image: dashboard
             dockerfile: ./apps/dashboard/Dockerfile.prod.arm64
+          - image: social-api
+            dockerfile: ./apps/social-api/Dockerfile.prod.arm64
 
     steps:
       - uses: actions/checkout@v4
