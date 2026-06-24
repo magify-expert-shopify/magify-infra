@@ -170,7 +170,12 @@ fi
 # ============================================================
 cd "$RUNNER_HOME"
 
-./svc.sh install "$TARGET_USER" || true
+if systemctl list-unit-files --type=service --no-legend --no-pager 2>/dev/null | grep -q '^actions\.runner\.'; then
+  echo "Service systemd GitHub Actions runner déjà présent."
+else
+  ./svc.sh install "$TARGET_USER"
+fi
+
 ./svc.sh start
 
 # ============================================================
