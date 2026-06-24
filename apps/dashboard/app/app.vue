@@ -29,15 +29,13 @@
 </template>
 
 <script setup lang="ts">
-const requestUrl = useRequestURL()
-const isDevHost = requestUrl.hostname.includes('.dev.')
-const suffix = isDevHost ? '.dev.magify.local' : '.magify.local'
+const config = useRuntimeConfig()
 
 const links = {
-  blog: `http://blog${suffix}`,
-  prospection: `http://prospection${suffix}`,
-  social: `http://social${suffix}`,
-  proxyManager: `http://admin${suffix}`,
+  blog: config.public.dashboardBlogUrl,
+  prospection: config.public.dashboardProspectionUrl,
+  social: config.public.dashboardSocialUrl,
+  proxyManager: config.public.dashboardProxyManagerUrl,
 }
 </script>
 

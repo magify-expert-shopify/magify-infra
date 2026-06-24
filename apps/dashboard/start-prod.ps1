@@ -19,6 +19,9 @@ if ($HostsOnly -or $Target -eq 'Raspberry') {
   return
 }
 
+$envFile = Join-Path $PSScriptRoot '.env.prod'
+& (Join-Path $repoRoot 'infra\scripts\load-dotenv.ps1') -Path $envFile
+
 $imageName = 'magify-dashboard:prod'
 $containerName = 'magify-dashboard-prod'
 $networkName = 'magify-network'
@@ -31,7 +34,12 @@ if ($networkExists -ne $networkName) {
   if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 }
 
-docker build -f (Join-Path $PSScriptRoot 'Dockerfile.prod') -t $imageName $repoRoot
+docker build -f (Join-Path $PSScriptRoot 'Dockerfile.prod') `
+  --build-arg NUXT_PUBLIC_DASHBOARD_BLOG_URL=$env:NUXT_PUBLIC_DASHBOARD_BLOG_URL `
+  --build-arg NUXT_PUBLIC_DASHBOARD_PROSPECTION_URL=$env:NUXT_PUBLIC_DASHBOARD_PROSPECTION_URL `
+  --build-arg NUXT_PUBLIC_DASHBOARD_SOCIAL_URL=$env:NUXT_PUBLIC_DASHBOARD_SOCIAL_URL `
+  --build-arg NUXT_PUBLIC_DASHBOARD_PROXY_MANAGER_URL=$env:NUXT_PUBLIC_DASHBOARD_PROXY_MANAGER_URL `
+  -t $imageName $repoRoot
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
 $existingContainer = docker ps -a --filter "name=^/$containerName$" --format '{{.Names}}'
