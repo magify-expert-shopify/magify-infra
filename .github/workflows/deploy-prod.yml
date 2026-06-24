@@ -39,6 +39,7 @@ jobs:
             package: magify-social-web
           - image: social-api
             dockerfile: ./apps/social-api/Dockerfile.prod.arm64
+            package: magify-social-api
 
     steps:
       - uses: actions/checkout@v4
