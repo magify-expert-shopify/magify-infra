@@ -1,4 +1,16 @@
 services:
+  dashboard:
+    image: ghcr.io/magify-expert-shopify/dashboard:latest
+    container_name: magify-dashboard
+    restart: unless-stopped
+    networks:
+      - magify-network
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+
   magify-nginx-proxy-manager:
     image: jc21/nginx-proxy-manager:latest
     container_name: magify-nginx-proxy-manager
@@ -14,6 +26,9 @@ services:
       - magify-nginx-proxy-manager-letsencrypt:/etc/letsencrypt
     networks:
       - magify-network
+    depends_on:
+      dashboard:
+        condition: service_healthy
 
 networks:
   magify-network:
