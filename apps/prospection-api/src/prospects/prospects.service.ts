@@ -2744,8 +2744,7 @@ export class ProspectsService {
 
   async getProspect(id: number) {
     await this.ensureProspectsTable();
-    const rows = await this.prisma.$queryRawUnsafe<any[]>(
-      `
+    const rows = await this.prisma.$queryRaw<any[]>`
       SELECT
         p.id,
         p.url_id,
@@ -2829,11 +2828,9 @@ export class ProspectsService {
         u.lighthouse_observations_json AS url_lighthouse_observations_json
       FROM "prospects" p
       LEFT JOIN "urls" u ON u.id = p.url_id
-      WHERE p.id = ? AND p.trashed_at IS NULL
+      WHERE p.id = ${id} AND p.trashed_at IS NULL
       LIMIT 1
-      `,
-      id,
-    );
+    `;
     const prospect = this.serializeProspectRow(rows[0]);
 
     if (!prospect) {
@@ -2853,8 +2850,7 @@ export class ProspectsService {
   async getProspectByUrlId(urlId: number) {
     await this.ensureProspectsTable();
 
-    const rows = await this.prisma.$queryRawUnsafe<any[]>(
-      `
+    const rows = await this.prisma.$queryRaw<any[]>`
       SELECT
         p.*,
         u.url AS url_url,
@@ -2895,12 +2891,10 @@ export class ProspectsService {
         u.lighthouse_observations_json AS url_lighthouse_observations_json
       FROM "prospects" p
       LEFT JOIN "urls" u ON u.id = p.url_id
-      WHERE p.url_id = ? AND p.trashed_at IS NULL
+      WHERE p.url_id = ${urlId} AND p.trashed_at IS NULL
       ORDER BY p.id ASC
       LIMIT 1
-      `,
-      urlId,
-    );
+    `;
 
     const prospect = rows[0] ? this.serializeProspectRow(rows[0]) : null;
 
