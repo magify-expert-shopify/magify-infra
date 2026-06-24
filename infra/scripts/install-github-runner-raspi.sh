@@ -139,19 +139,6 @@ DOWNLOAD_URL="https://github.com/actions/runner/releases/download/v${LATEST_VERS
 
 echo "Version runner GitHub : $LATEST_VERSION"
 
-if [[ ! -f "$RUNNER_HOME/.runner" ]]; then
-  sudo -u "$TARGET_USER" bash -lc "
-    cd '$RUNNER_HOME'
-    curl -fL -o '$PKG' '$DOWNLOAD_URL'
-    tar xzf '$PKG'
-    rm '$PKG'
-  "
-
-  bash "$RUNNER_HOME/bin/installdependencies.sh" || true
-else
-  echo "Runner déjà présent dans $RUNNER_HOME. Réutilisation de l'installation existante."
-fi
-
 if [[ -x "$RUNNER_HOME/svc.sh" ]]; then
   if systemctl list-unit-files --type=service --no-legend --no-pager 2>/dev/null | grep -q '^actions\.runner\.'; then
     echo "Service systemd runner déjà présent. Réinitialisation avant reconfiguration."
@@ -161,13 +148,25 @@ if [[ -x "$RUNNER_HOME/svc.sh" ]]; then
 fi
 
 if [[ -f "$RUNNER_HOME/.runner" ]]; then
-  echo "Nettoyage des fichiers de configuration locaux du runner."
-  rm -f \
-    "$RUNNER_HOME/.runner" \
-    "$RUNNER_HOME/.credentials" \
-    "$RUNNER_HOME/.credentials_rsaparams" \
-    "$RUNNER_HOME/.service" \
-    "$RUNNER_HOME/_diag"/*.log 2>/dev/null || true
+  echo "Ancienne configuration du runner détectée. Réinitialisation complète du dossier runner."
+  if [[ -x "$RUNNER_HOME/svc.sh" ]]; then
+    "$RUNNER_HOME/svc.sh" stop || true
+    "$RUNNER_HOME/svc.sh" uninstall || true
+  fi
+  rm -rf "$RUNNER_HOME"
+  mkdir -p "$RUNNER_HOME"
+  chown "$TARGET_USER:$TARGET_USER" "$RUNNER_HOME"
+fi
+
+if [[ ! -f "$RUNNER_HOME/.runner" ]]; then
+  sudo -u "$TARGET_USER" bash -lc "
+    cd '$RUNNER_HOME'
+    curl -fL -o '$PKG' '$DOWNLOAD_URL'
+    tar xzf '$PKG'
+    rm '$PKG'
+  "
+
+  bash "$RUNNER_HOME/bin/installdependencies.sh" || true
 fi
 
 sudo -u "$TARGET_USER" bash -lc "
