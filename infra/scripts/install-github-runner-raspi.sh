@@ -160,6 +160,16 @@ if [[ -x "$RUNNER_HOME/svc.sh" ]]; then
   fi
 fi
 
+if [[ -f "$RUNNER_HOME/.runner" ]]; then
+  echo "Nettoyage des fichiers de configuration locaux du runner."
+  rm -f \
+    "$RUNNER_HOME/.runner" \
+    "$RUNNER_HOME/.credentials" \
+    "$RUNNER_HOME/.credentials_rsaparams" \
+    "$RUNNER_HOME/.service" \
+    "$RUNNER_HOME/_diag"/*.log 2>/dev/null || true
+fi
+
 sudo -u "$TARGET_USER" bash -lc "
   cd '$RUNNER_HOME'
   ./config.sh \
