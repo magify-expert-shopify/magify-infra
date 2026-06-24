@@ -42,6 +42,9 @@ export default defineNuxtConfig({
   },
 
   vite: {
+    optimizeDeps: {
+      include: ["@tiptap/starter-kit", "@tiptap/vue-3"],
+    },
     server: {
       allowedHosts: [appUrlObject.hostname],
       hmr: {
