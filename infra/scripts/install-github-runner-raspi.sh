@@ -148,6 +148,14 @@ DOWNLOAD_URL="https://github.com/actions/runner/releases/download/v${LATEST_VERS
 
 echo "Version runner GitHub : $LATEST_VERSION"
 
+if [[ -x "$RUNNER_HOME/config.sh" ]]; then
+  echo "Tentative de suppression de l'ancienne configuration du runner."
+  sudo -u "$TARGET_USER" bash -lc "
+    cd '$RUNNER_HOME'
+    ./config.sh remove --token '$RUNNER_TOKEN'
+  " || true
+fi
+
 if [[ -x "$RUNNER_HOME/svc.sh" ]]; then
   if systemctl list-unit-files --type=service --no-legend --no-pager 2>/dev/null | grep -q '^actions\.runner\.'; then
     echo "Service systemd runner déjà présent. Réinitialisation avant reconfiguration."
@@ -156,12 +164,8 @@ if [[ -x "$RUNNER_HOME/svc.sh" ]]; then
   fi
 fi
 
-if [[ -f "$RUNNER_HOME/.runner" ]]; then
-  echo "Ancienne configuration du runner détectée. Réinitialisation complète du dossier runner."
-  if [[ -x "$RUNNER_HOME/svc.sh" ]]; then
-    "$RUNNER_HOME/svc.sh" stop || true
-    "$RUNNER_HOME/svc.sh" uninstall || true
-  fi
+if [[ -d "$RUNNER_HOME" ]]; then
+  echo "Réinitialisation complète du dossier runner."
   rm -rf "$RUNNER_HOME"
   mkdir -p "$RUNNER_HOME"
   chown "$TARGET_USER:$TARGET_USER" "$RUNNER_HOME"
