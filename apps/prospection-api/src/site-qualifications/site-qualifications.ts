@@ -168,6 +168,22 @@ function normalizeChecklist(value: unknown): SiteQualificationChecklist {
   };
 }
 
+function sqlLiteral(value: unknown) {
+  if (value === null || value === undefined) {
+    return 'NULL';
+  }
+
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return String(value);
+  }
+
+  if (typeof value === 'boolean') {
+    return value ? 'TRUE' : 'FALSE';
+  }
+
+  return `'${String(value).replace(/'/g, "''")}'`;
+}
+
 function normalizeObservation(value: any, index: number): SiteObservation {
   const key = String(value?.key || value?.observationKey || value?.clientKey || '').trim() || randomUUID();
   const title = String(value?.title || value?.name || '').trim();
@@ -328,7 +344,16 @@ export async function upsertSiteObservation(
   await prisma.$executeRawUnsafe(
     `
     INSERT INTO "site_observations" ("url_id", "observation_key", "title", "detail", "severity", "source", "created_at", "updated_at")
-    VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+    VALUES (
+      ${sqlLiteral(urlId)},
+      ${sqlLiteral(normalized.key)},
+      ${sqlLiteral(normalized.title)},
+      ${sqlLiteral(normalized.detail)},
+      ${sqlLiteral(normalizeSeverity(normalized.severity))},
+      ${sqlLiteral(normalizeObservationSource((normalized as any).source, normalized.key))},
+      CURRENT_TIMESTAMP,
+      CURRENT_TIMESTAMP
+    )
     ON CONFLICT ("url_id", "observation_key") DO UPDATE SET
       "title" = EXCLUDED."title",
       "detail" = EXCLUDED."detail",
@@ -336,12 +361,6 @@ export async function upsertSiteObservation(
       "source" = EXCLUDED."source",
       "updated_at" = CURRENT_TIMESTAMP
     `,
-    urlId,
-    normalized.key,
-    normalized.title,
-    normalized.detail,
-    normalizeSeverity(normalized.severity),
-    normalizeObservationSource((normalized as any).source, normalized.key),
   );
 
   return loadSiteQualification(prisma, urlId);
@@ -351,9 +370,7 @@ export async function removeSiteObservation(prisma: PrismaService, urlId: number
   await ensureSiteQualificationTables(prisma);
 
   await prisma.$executeRawUnsafe(
-    'DELETE FROM "site_observations" WHERE "url_id" = ? AND "observation_key" = ?',
-    urlId,
-    String(observationKey || '').trim(),
+    `DELETE FROM "site_observations" WHERE "url_id" = ${sqlLiteral(urlId)} AND "observation_key" = ${sqlLiteral(String(observationKey || '').trim())}`,
   );
 
   return loadSiteQualification(prisma, urlId);
@@ -419,8 +436,7 @@ export async function saveSiteQualification(
 
   await prisma.$transaction(async (tx: any) => {
     const existingObservationRows = (await tx.$queryRawUnsafe(
-      'SELECT "observation_key", "title", "detail", "severity", "source" FROM "site_observations" WHERE "url_id" = ? ORDER BY "id" ASC',
-      urlId,
+      `SELECT "observation_key", "title", "detail", "severity", "source" FROM "site_observations" WHERE "url_id" = ${sqlLiteral(urlId)} ORDER BY "id" ASC`,
     )) as Array<{
       observation_key: string;
       title: string;
@@ -466,53 +482,54 @@ export async function saveSiteQualification(
     await tx.$executeRawUnsafe(
       `
       INSERT INTO "site_qualifications" ("url_id", "positioning", "abandon_reason", "main_observation_key", "created_at", "updated_at")
-      VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+      VALUES (
+        ${sqlLiteral(urlId)},
+        ${sqlLiteral(positioning)},
+        ${sqlLiteral(abandonReason)},
+        ${sqlLiteral(effectiveMainKey)},
+        CURRENT_TIMESTAMP,
+        CURRENT_TIMESTAMP
+      )
       ON CONFLICT ("url_id") DO UPDATE SET
         "positioning" = EXCLUDED."positioning",
         "abandon_reason" = EXCLUDED."abandon_reason",
         "main_observation_key" = EXCLUDED."main_observation_key",
         "updated_at" = CURRENT_TIMESTAMP
       `,
-      urlId,
-      positioning,
-      abandonReason,
-      effectiveMainKey,
     );
 
     await tx.$executeRawUnsafe(
       `
       UPDATE "site_qualifications"
-      SET "verification_checklist_json" = ?,
+      SET "verification_checklist_json" = ${sqlLiteral(JSON.stringify(verificationChecklist))},
           "updated_at" = CURRENT_TIMESTAMP
-      WHERE "url_id" = ?
+      WHERE "url_id" = ${sqlLiteral(urlId)}
       `,
-      JSON.stringify(verificationChecklist),
-      urlId,
     );
 
     await tx.$executeRawUnsafe(
-      'UPDATE "urls" SET "redesign_decision" = ? WHERE "id" = ?',
-      redesignDecision,
-      urlId,
+      `UPDATE "urls" SET "redesign_decision" = ${sqlLiteral(redesignDecision)} WHERE "id" = ${sqlLiteral(urlId)}`,
     );
 
     await tx.$executeRawUnsafe(
-      'DELETE FROM "site_observations" WHERE "url_id" = ?',
-      urlId,
+      `DELETE FROM "site_observations" WHERE "url_id" = ${sqlLiteral(urlId)}`,
     );
 
     for (const observation of nextObservations) {
       await tx.$executeRawUnsafe(
         `
         INSERT INTO "site_observations" ("url_id", "observation_key", "title", "detail", "severity", "source", "created_at", "updated_at")
-        VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+        VALUES (
+          ${sqlLiteral(urlId)},
+          ${sqlLiteral(observation.key || randomUUID())},
+          ${sqlLiteral(observation.title)},
+          ${sqlLiteral(observation.detail)},
+          ${sqlLiteral(normalizeSeverity(observation.severity))},
+          ${sqlLiteral(normalizeObservationSource((observation as any).source, observation.key || ''))},
+          CURRENT_TIMESTAMP,
+          CURRENT_TIMESTAMP
+        )
         `,
-        urlId,
-        observation.key || randomUUID(),
-        observation.title,
-        observation.detail,
-        normalizeSeverity(observation.severity),
-        normalizeObservationSource((observation as any).source, observation.key || ''),
       );
     }
   });

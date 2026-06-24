@@ -520,14 +520,11 @@ export class ProspectsService {
           `
           UPDATE "prospects"
           SET
-            "magify_ticket_id" = ?,
-            "magify_ticket_url" = ?,
+            "magify_ticket_id" = ${this.sqlLiteral(ticketId)},
+            "magify_ticket_url" = ${this.sqlLiteral(ticketUrl)},
             "updated_at" = CURRENT_TIMESTAMP
-          WHERE "id" = ? AND "trashed_at" IS NULL
+          WHERE "id" = ${this.sqlLiteral(id)} AND "trashed_at" IS NULL
           `,
-          ticketId,
-          ticketUrl,
-          id,
         );
       }
 
@@ -872,10 +869,7 @@ export class ProspectsService {
     const templateKey = this.normalizeEmailTemplateKey(body.templateKey) || 'blank';
 
     await this.prisma.$executeRawUnsafe(
-      `UPDATE "prospects" SET "first_contact_email_subject" = ?, "first_contact_email_body" = ? WHERE "id" = ? AND "trashed_at" IS NULL`,
-      subject,
-      emailBody,
-      id,
+      `UPDATE "prospects" SET "first_contact_email_subject" = ${this.sqlLiteral(subject)}, "first_contact_email_body" = ${this.sqlLiteral(emailBody)} WHERE "id" = ${this.sqlLiteral(id)} AND "trashed_at" IS NULL`,
     );
 
     const composer = await this.getEmailComposer(id);
@@ -944,12 +938,7 @@ export class ProspectsService {
         });
 
         await this.prisma.$executeRawUnsafe(
-          `UPDATE "prospects" SET "first_contact_email_queued_at" = NULL, "first_contact_email_sent_at" = CURRENT_TIMESTAMP, "first_contact_email_subject" = ?, "first_contact_email_body" = ?, "email_send_count" = ?, "status" = ?, "updated_at" = CURRENT_TIMESTAMP WHERE "id" = ? AND "trashed_at" IS NULL`,
-          subject,
-          emailBody,
-          sendRecord.sendCount,
-          sendRecord.sendCount > 1 ? 'Relance en cours' : 'Prospect contacté',
-          id,
+          `UPDATE "prospects" SET "first_contact_email_queued_at" = NULL, "first_contact_email_sent_at" = CURRENT_TIMESTAMP, "first_contact_email_subject" = ${this.sqlLiteral(subject)}, "first_contact_email_body" = ${this.sqlLiteral(emailBody)}, "email_send_count" = ${this.sqlLiteral(sendRecord.sendCount)}, "status" = ${this.sqlLiteral(sendRecord.sendCount > 1 ? 'Relance en cours' : 'Prospect contacté')}, "updated_at" = CURRENT_TIMESTAMP WHERE "id" = ${this.sqlLiteral(id)} AND "trashed_at" IS NULL`,
         );
 
         await this.prospectEmailScheduleService.completeReservedSendSlot();
@@ -992,10 +981,7 @@ export class ProspectsService {
     );
 
     await this.prisma.$executeRawUnsafe(
-      `UPDATE "prospects" SET "first_contact_email_queued_at" = CURRENT_TIMESTAMP, "first_contact_email_sent_at" = NULL, "first_contact_email_subject" = ?, "first_contact_email_body" = ? WHERE "id" = ? AND "trashed_at" IS NULL`,
-      subject,
-      emailBody,
-      id,
+      `UPDATE "prospects" SET "first_contact_email_queued_at" = CURRENT_TIMESTAMP, "first_contact_email_sent_at" = NULL, "first_contact_email_subject" = ${this.sqlLiteral(subject)}, "first_contact_email_body" = ${this.sqlLiteral(emailBody)} WHERE "id" = ${this.sqlLiteral(id)} AND "trashed_at" IS NULL`,
     );
 
     return {
@@ -1414,9 +1400,7 @@ export class ProspectsService {
     );
 
     await this.prisma.$executeRawUnsafe(
-      `UPDATE "prospects" SET "first_contact_email_queued_at" = NULL, "first_contact_email_sent_at" = ?, "status" = 'Prospect contacté', "updated_at" = CURRENT_TIMESTAMP WHERE "id" = ? AND "trashed_at" IS NULL`,
-      sentAt.toISOString(),
-      id,
+      `UPDATE "prospects" SET "first_contact_email_queued_at" = NULL, "first_contact_email_sent_at" = ${this.sqlLiteral(sentAt.toISOString())}, "status" = 'Prospect contacté', "updated_at" = CURRENT_TIMESTAMP WHERE "id" = ${this.sqlLiteral(id)} AND "trashed_at" IS NULL`,
     );
 
     return this.getEmailComposer(id);
@@ -1526,18 +1510,13 @@ export class ProspectsService {
         UPDATE "prospects"
         SET "first_contact_email_queued_at" = NULL,
             "first_contact_email_sent_at" = CURRENT_TIMESTAMP,
-            "first_contact_email_subject" = ?,
-            "first_contact_email_body" = ?,
-            "email_send_count" = ?,
-            "status" = ?,
+            "first_contact_email_subject" = ${this.sqlLiteral(queuedSubject)},
+            "first_contact_email_body" = ${this.sqlLiteral(queuedBody)},
+            "email_send_count" = ${this.sqlLiteral(sendRecord.sendCount)},
+            "status" = ${this.sqlLiteral(sendRecord.sendCount > 1 ? 'Relance en cours' : 'Prospect contacté')},
             "updated_at" = CURRENT_TIMESTAMP
-        WHERE "id" = ? AND "trashed_at" IS NULL
+        WHERE "id" = ${this.sqlLiteral(id)} AND "trashed_at" IS NULL
       `,
-      queuedSubject,
-      queuedBody,
-      sendRecord.sendCount,
-      sendRecord.sendCount > 1 ? 'Relance en cours' : 'Prospect contacté',
-      id,
     );
 
     return this.getEmailComposer(id);
@@ -1869,11 +1848,20 @@ export class ProspectsService {
           "last_error",
           "current_prospect_id",
           "updated_at"
-        ) VALUES (?, ?, 0, 0, ?, CURRENT_TIMESTAMP, NULL, NULL, NULL, NULL, CURRENT_TIMESTAMP)
+        ) VALUES (
+          ${this.sqlLiteral('queued')},
+          ${this.sqlLiteral(prospects.length)},
+          0,
+          0,
+          ${this.sqlLiteral(prospects.length)},
+          CURRENT_TIMESTAMP,
+          NULL,
+          NULL,
+          NULL,
+          NULL,
+          CURRENT_TIMESTAMP
+        )
       `,
-      'queued',
-      prospects.length,
-      prospects.length,
     );
 
     const runRows = await this.prisma.$queryRawUnsafe<any[]>(
@@ -1915,12 +1903,10 @@ export class ProspectsService {
           "started_at" = COALESCE("started_at", CURRENT_TIMESTAMP),
           "running_prospects" = COALESCE("running_prospects", 0) + 1,
           "pending_prospects" = CASE WHEN "pending_prospects" > 0 THEN "pending_prospects" - 1 ELSE 0 END,
-          "current_prospect_id" = ?,
+          "current_prospect_id" = ${this.sqlLiteral(prospectId)},
           "updated_at" = CURRENT_TIMESTAMP
-        WHERE "id" = ?
+        WHERE "id" = ${this.sqlLiteral(runId)}
       `,
-      prospectId,
-      runId,
     );
 
     await this.emitProspectStatusRecalcEvent('prospect-status-recalc.updated');
@@ -1930,8 +1916,7 @@ export class ProspectsService {
     await this.ensureProspectStatusRecalcTable();
 
     const rows = await this.prisma.$queryRawUnsafe<any[]>(
-      'SELECT "pending_prospects", "running_prospects" FROM "prospect_status_recalc_runs" WHERE "id" = ? LIMIT 1',
-      runId,
+      `SELECT "pending_prospects", "running_prospects" FROM "prospect_status_recalc_runs" WHERE "id" = ${this.sqlLiteral(runId)} LIMIT 1`,
     );
     const row = rows[0];
     const pendingProspects = Number(row?.pending_prospects || 0);
@@ -1942,19 +1927,15 @@ export class ProspectsService {
       `
         UPDATE "prospect_status_recalc_runs"
         SET
-          "status" = ?,
+          "status" = ${this.sqlLiteral(isCompleted ? 'completed' : 'running')},
           "processed_prospects" = COALESCE("processed_prospects", 0) + 1,
           "running_prospects" = CASE WHEN "running_prospects" > 0 THEN "running_prospects" - 1 ELSE 0 END,
           "current_prospect_id" = NULL,
-          "last_error" = COALESCE(?, "last_error"),
-          "finished_at" = CASE WHEN ? THEN CURRENT_TIMESTAMP ELSE "finished_at" END,
+          "last_error" = COALESCE(${this.sqlLiteral(errorMessage || null)}, "last_error"),
+          "finished_at" = CASE WHEN ${this.sqlLiteral(isCompleted ? 1 : 0)} THEN CURRENT_TIMESTAMP ELSE "finished_at" END,
           "updated_at" = CURRENT_TIMESTAMP
-        WHERE "id" = ?
+        WHERE "id" = ${this.sqlLiteral(runId)}
       `,
-      isCompleted ? 'completed' : 'running',
-      errorMessage || null,
-      isCompleted ? 1 : 0,
-      runId,
     );
 
     await this.emitProspectStatusRecalcEvent(isCompleted ? 'prospect-status-recalc.completed' : 'prospect-status-recalc.updated');
@@ -2682,8 +2663,7 @@ export class ProspectsService {
       }
 
       const trashedProspect = await this.prisma.$queryRawUnsafe<any[]>(
-        'SELECT "id" FROM "prospects" WHERE "url_id" = ? AND "trashed_at" IS NOT NULL LIMIT 1',
-        row.id,
+        `SELECT "id" FROM "prospects" WHERE "url_id" = ${this.sqlLiteral(row.id)} AND "trashed_at" IS NOT NULL LIMIT 1`,
       );
 
       if (trashedProspect[0]) {
@@ -2941,8 +2921,7 @@ export class ProspectsService {
   }) {
     await this.ensureProspectsTable();
     const previousRows = await this.prisma.$queryRawUnsafe<Array<{ status: string | null; email: string | null }>>(
-      'SELECT "status", "email" FROM "prospects" WHERE "url_id" = ? LIMIT 1',
-      urlId,
+      `SELECT "status", "email" FROM "prospects" WHERE "url_id" = ${this.sqlLiteral(urlId)} LIMIT 1`,
     );
     const previousStatus = previousRows[0]?.status || null;
     const resolvedEmail = payload.email ?? previousRows[0]?.email ?? null;
@@ -3035,9 +3014,7 @@ export class ProspectsService {
 
     if (resolvedEmail && previousStatus === 'Prospect informations manquantes') {
       await this.prisma.$executeRawUnsafe(
-        'UPDATE "prospects" SET "status" = ?, "updated_at" = CURRENT_TIMESTAMP WHERE "url_id" = ? AND "trashed_at" IS NULL',
-        'Prospect froid',
-        urlId,
+        `UPDATE "prospects" SET "status" = ${this.sqlLiteral('Prospect froid')}, "updated_at" = CURRENT_TIMESTAMP WHERE "url_id" = ${this.sqlLiteral(urlId)} AND "trashed_at" IS NULL`,
       );
     }
 
@@ -3052,15 +3029,11 @@ export class ProspectsService {
 
     if (status === 'Prospect froid') {
       await this.prisma.$executeRawUnsafe(
-        'UPDATE "prospects" SET "status" = ?, "first_contact_email_queued_at" = NULL, "first_contact_email_sent_at" = NULL, "email_send_count" = 0 WHERE "id" = ? AND "trashed_at" IS NULL',
-        status,
-        id,
+        `UPDATE "prospects" SET "status" = ${this.sqlLiteral(status)}, "first_contact_email_queued_at" = NULL, "first_contact_email_sent_at" = NULL, "email_send_count" = 0 WHERE "id" = ${this.sqlLiteral(id)} AND "trashed_at" IS NULL`,
       );
     } else {
       await this.prisma.$executeRawUnsafe(
-        'UPDATE "prospects" SET "status" = ? WHERE "id" = ? AND "trashed_at" IS NULL',
-        status,
-        id,
+        `UPDATE "prospects" SET "status" = ${this.sqlLiteral(status)} WHERE "id" = ${this.sqlLiteral(id)} AND "trashed_at" IS NULL`,
       );
     }
 
@@ -3288,8 +3261,7 @@ export class ProspectsService {
       || hasNameUpdate
     ) {
       const currentProspectMetaRows = await this.prisma.$queryRawUnsafe<Array<{ name: string | null; url_id: number | null }>>(
-        'SELECT "name", "url_id" FROM "prospects" WHERE "id" = ? AND "trashed_at" IS NULL LIMIT 1',
-        id,
+        `SELECT "name", "url_id" FROM "prospects" WHERE "id" = ${this.sqlLiteral(id)} AND "trashed_at" IS NULL LIMIT 1`,
       );
       const currentProspectName = currentProspectMetaRows[0]?.name ?? null;
       const urlId = currentProspectMetaRows[0]?.url_id ?? null;
@@ -3486,46 +3458,30 @@ export class ProspectsService {
             `
             UPDATE "urls"
             SET
-              "site_name" = ?,
-              "shopify_legal_notice_url" = ?,
-              "site_language_code" = ?,
-              "site_language_name" = ?
-            WHERE "id" = ?
+              "site_name" = ${this.sqlLiteral(nextSiteName)},
+              "shopify_legal_notice_url" = ${this.sqlLiteral(nextShopifyLegalNoticeUrl)},
+              "site_language_code" = ${this.sqlLiteral(nextSiteLanguageCode)},
+              "site_language_name" = ${this.sqlLiteral(nextSiteLanguageName)}
+            WHERE "id" = ${this.sqlLiteral(urlId)}
             `,
-            nextSiteName,
-            nextShopifyLegalNoticeUrl,
-            nextSiteLanguageCode,
-            nextSiteLanguageName,
-            urlId,
           );
 
           await this.prisma.$executeRawUnsafe(
             `
             UPDATE "prospects"
             SET
-              "siren" = ?,
-              "phone" = ?,
-              "owner" = ?,
-              "last_name" = ?,
-              "company_address" = ?,
-              "company_address_extra" = ?,
-              "company_postal_code" = ?,
-              "company_city" = ?,
-              "company_legal_form" = ?,
-              "company_country" = ?
-            WHERE "url_id" = ? AND "trashed_at" IS NULL
+              "siren" = ${this.sqlLiteral(nextContactSiren)},
+              "phone" = ${this.sqlLiteral(nextContactPhone)},
+              "owner" = ${this.sqlLiteral(nextContactOwnerName)},
+              "last_name" = ${this.sqlLiteral(nextContactLastName)},
+              "company_address" = ${this.sqlLiteral(nextContactCompanyAddress)},
+              "company_address_extra" = ${this.sqlLiteral(nextContactCompanyAddressExtra)},
+              "company_postal_code" = ${this.sqlLiteral(nextContactCompanyPostalCode)},
+              "company_city" = ${this.sqlLiteral(nextContactCompanyCity)},
+              "company_legal_form" = ${this.sqlLiteral(nextContactCompanyLegalForm)},
+              "company_country" = ${this.sqlLiteral(nextContactCompanyCountry)}
+            WHERE "url_id" = ${this.sqlLiteral(urlId)} AND "trashed_at" IS NULL
             `,
-            nextContactSiren,
-            nextContactPhone,
-            nextContactOwnerName,
-            nextContactLastName,
-            nextContactCompanyAddress,
-            nextContactCompanyAddressExtra,
-            nextContactCompanyPostalCode,
-            nextContactCompanyCity,
-            nextContactCompanyLegalForm,
-            nextContactCompanyCountry,
-            urlId,
           );
 
           const leadScoreSettings = await this.siteSettingsService.getLeadScoreSettings();
@@ -3567,9 +3523,7 @@ export class ProspectsService {
           }, leadScoreSettings);
 
           await this.prisma.$executeRawUnsafe(
-            'UPDATE "prospects" SET "lead_score" = ?, "updated_at" = CURRENT_TIMESTAMP WHERE "url_id" = ? AND "trashed_at" IS NULL',
-            leadScore,
-            urlId,
+            `UPDATE "prospects" SET "lead_score" = ${this.sqlLiteral(leadScore)}, "updated_at" = CURRENT_TIMESTAMP WHERE "url_id" = ${this.sqlLiteral(urlId)} AND "trashed_at" IS NULL`,
           );
         }
       }
