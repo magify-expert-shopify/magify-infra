@@ -46,7 +46,7 @@ docker build \
   "$REPO_ROOT"
 
 ensure_network "$NETWORK_NAME"
-docker pull "$IMAGE_NAME"
+# docker pull "$IMAGE_NAME"
 remove_container_if_exists "$CONTAINER_NAME"
 
 docker run -d \

@@ -33,6 +33,6 @@ COPY --from=builder /app/deploy ./
 COPY --from=builder /app/apps/social-api/dist ./dist
 COPY --from=builder /app/apps/social-api/prisma ./prisma
 
-EXPOSE 30000
+EXPOSE 4003
 
 CMD ["node", "dist/src/main.js"]

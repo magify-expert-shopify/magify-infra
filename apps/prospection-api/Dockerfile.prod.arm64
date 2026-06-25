@@ -34,6 +34,6 @@ COPY --from=builder /app/deploy ./
 COPY --from=builder /app/apps/prospection-api/dist ./dist
 COPY --from=builder /app/apps/prospection-api/prisma ./prisma
 
-EXPOSE 30000
+EXPOSE 4002
 
 CMD ["node", "dist/src/main.js"]

@@ -25,10 +25,10 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 ENV NITRO_HOST=0.0.0.0
-ENV NITRO_PORT=30000
+ENV NITRO_PORT=3003
 
 COPY --from=builder /app/apps/social-web/.output ./.output
 
-EXPOSE 30000
+EXPOSE 3003
 
 CMD ["node", ".output/server/index.mjs"]
