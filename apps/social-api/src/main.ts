@@ -32,9 +32,10 @@ async function bootstrap() {
   app.enableCors({
     origin: allowedOrigins.length > 0 ? allowedOrigins : true,
   });
-  await app.listen(process.env.PORT ?? 3000);
+  const port = Number(process.env.PORT ?? 3000);
+  await app.listen(port);
 
   const appUrl = process.env.APP_URL?.trim() || (await app.getUrl());
-  logger.log(`API available at ${appUrl}`);
+  logger.log(`API available at ${appUrl} (port ${port})`);
 }
 bootstrap();
