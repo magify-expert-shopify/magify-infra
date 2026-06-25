@@ -172,6 +172,14 @@ export function useSupabaseAuth() {
     return String(config.public.supabaseAnonKey ?? "").trim();
   }
 
+  function getApiBaseUrl() {
+    return String(
+      import.meta.server
+        ? config.apiInternalUrl || config.public.apiUrl
+        : config.public.apiUrl || "http://localhost:4000",
+    ).replace(/\/+$/, "");
+  }
+
   async function signInWithPassword(email: string, password: string) {
     const supabaseBaseUrl = getSupabaseBaseUrl();
     const supabaseAnonKey = getSupabaseAnonKey();
@@ -230,19 +238,41 @@ export function useSupabaseAuth() {
     const supabaseAnonKey = getSupabaseAnonKey();
 
     const refreshPromise = (async () => {
-      const response = await $fetch<SupabaseSignInResponse>(
-        `${supabaseBaseUrl}/auth/v1/token?grant_type=refresh_token`,
-        {
-          method: "POST",
-          headers: createSupabaseRequestHeaders(supabaseAnonKey),
-          query: {
-            apikey: supabaseAnonKey,
+      let response: SupabaseSignInResponse;
+
+      try {
+        response = await $fetch<SupabaseSignInResponse>(
+          `${supabaseBaseUrl}/auth/v1/token?grant_type=refresh_token`,
+          {
+            method: "POST",
+            headers: createSupabaseRequestHeaders(supabaseAnonKey),
+            query: {
+              apikey: supabaseAnonKey,
+            },
+            body: {
+              refresh_token: currentRefreshToken,
+            },
           },
-          body: {
-            refresh_token: currentRefreshToken,
-          },
-        },
-      );
+        );
+      } catch (error) {
+        const currentError = error as {
+          statusCode?: number;
+          status?: number;
+          response?: { status?: number };
+        };
+        const statusCode =
+          currentError.statusCode ??
+          currentError.status ??
+          currentError.response?.status;
+
+        if (statusCode === 400 || statusCode === 401 || statusCode === 403) {
+          clearSession();
+          clearSessionVerificationState();
+          return null;
+        }
+
+        throw error;
+      }
 
       const mappedUser = mapUser(response.user) ?? session.value?.user ?? null;
       const accessTokenValue = response.access_token?.trim() ?? "";
@@ -293,9 +323,7 @@ export function useSupabaseAuth() {
 
     try {
       const verifyPromise = (async () => {
-        const apiBaseUrl = String(
-          config.public.apiUrl || "http://localhost:4000",
-        ).replace(/\/+$/, "");
+        const apiBaseUrl = getApiBaseUrl();
         const response = await $fetch<{ user: SupabaseAuthUser | null }>(
           `${apiBaseUrl}/supabase-auth/me`,
           {

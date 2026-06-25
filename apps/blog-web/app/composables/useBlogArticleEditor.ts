@@ -14,7 +14,7 @@ import { TextStyle } from "@tiptap/extension-text-style";
 import Underline from "@tiptap/extension-underline";
 import StarterKit from "@tiptap/starter-kit";
 import { Fragment } from "@tiptap/pm/model";
-import { NodeSelection, Plugin, TextSelection } from "@tiptap/pm/state";
+import { NodeSelection, Plugin, PluginKey, TextSelection } from "@tiptap/pm/state";
 import { Decoration, DecorationSet } from "@tiptap/pm/view";
 import { useEditor } from "@tiptap/vue-3";
 import {
@@ -171,6 +171,7 @@ const NonBreakingSpace = Extension.create({
   addProseMirrorPlugins() {
     return [
       new Plugin({
+        key: new PluginKey("non-breaking-space"),
         props: {
           decorations(state) {
             const decorations: Decoration[] = [];
@@ -217,6 +218,7 @@ const EmDashHighlight = Extension.create({
   addProseMirrorPlugins() {
     return [
       new Plugin({
+        key: new PluginKey("em-dash-highlight"),
         props: {
           decorations(state) {
             const decorations: Decoration[] = [];
@@ -614,6 +616,7 @@ const CustomElementStructure = TiptapNode.create({
   addProseMirrorPlugins() {
     return [
       new Plugin({
+        key: new PluginKey("custom-element-structure"),
         props: {
           handleClickOn(view, _pos, node, nodePos) {
             if (node.type.name !== "customElementStructure") {

@@ -13,6 +13,7 @@ export class AppController {
     const appUrl = process.env.APP_URL?.trim() || 'http://localhost:3000';
     const bullBoardPath = process.env.BULL_BOARD_PATH || '/admin/queues';
     const bullBoardUrl = new URL(bullBoardPath, appUrl).toString();
+    const databaseUrl = this.maskDatabaseUrl(process.env.DATABASE_URL);
 
     const [database, redis] = await Promise.all([
       this.checkDatabase(),
@@ -30,6 +31,7 @@ export class AppController {
       api,
       database,
       redis,
+      databaseUrl,
       bullBoardUrl: redis.ok ? bullBoardUrl : null,
     });
   }
@@ -106,6 +108,7 @@ export class AppController {
     api: { label: string; ok: boolean; detail: string };
     database: { label: string; ok: boolean; detail: string };
     redis: { label: string; ok: boolean; detail: string };
+    databaseUrl: string;
     bullBoardUrl: string | null;
   }) {
     const row = (label: string, ok: boolean, detail: string) => `
@@ -273,6 +276,17 @@ export class AppController {
       </div>
 
       <div class="section">
+        <div class="meta">Database connection</div>
+        <div class="row">
+          <div class="row-left">
+            <span class="dot ok"></span>
+            <strong>DATABASE_URL</strong>
+          </div>
+          <span class="detail">${this.escapeHtml(input.databaseUrl)}</span>
+        </div>
+      </div>
+
+      <div class="section">
         <div class="meta">Tools</div>
         ${
           input.bullBoardUrl
@@ -311,5 +325,13 @@ export class AppController {
       .replaceAll('>', '&gt;')
       .replaceAll('"', '&quot;')
       .replaceAll("'", '&#39;');
+  }
+
+  private maskDatabaseUrl(databaseUrl?: string) {
+    if (!databaseUrl?.trim()) {
+      return 'undefined';
+    }
+
+    return databaseUrl.replace(/:\/\/([^:]+):([^@]+)@/, '://$1:***@');
   }
 }

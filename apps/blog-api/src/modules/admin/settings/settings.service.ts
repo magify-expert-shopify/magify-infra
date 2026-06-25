@@ -231,13 +231,9 @@ export class SettingsService {
   }
 
   async getBusinessPositioning(): Promise<BusinessPositioningSettings> {
-    const answersSetting = await (this.prisma as any).appSetting.findUnique({
-      where: {
-        key: BUSINESS_POSITIONING_SETTING_KEY,
-      },
-    });
-
-    const answers = this.parseBusinessPositioningValue(answersSetting?.value);
+    const answers = this.parseBusinessPositioningValue(
+      await this.findAppSettingValue(BUSINESS_POSITIONING_SETTING_KEY),
+    );
     const keywords = await this.keywordService.listKeywords({
       source: KeywordSource.BUSINESS_POSITIONING,
     });
@@ -250,35 +246,25 @@ export class SettingsService {
   }
 
   async getBlogArticleFromSuggestionTone() {
-    const setting = await (this.prisma as any).appSetting.findUnique({
-      where: {
-        key: BLOG_ARTICLE_FROM_SUGGESTION_TONE_SETTING_KEY,
-      },
-    });
-
-    return setting?.value?.trim() || DEFAULT_BLOG_ARTICLE_FROM_SUGGESTION_TONE;
+    return (
+      (await this.findAppSettingValue(
+        BLOG_ARTICLE_FROM_SUGGESTION_TONE_SETTING_KEY,
+      )) || DEFAULT_BLOG_ARTICLE_FROM_SUGGESTION_TONE
+    );
   }
 
   async getKeywordDifficultyLevels(): Promise<KeywordDifficultyLevelsSettings> {
-    const setting = await (this.prisma as any).appSetting.findUnique({
-      where: {
-        key: KEYWORD_DIFFICULTY_LEVELS_SETTING_KEY,
-      },
-    });
-
     return {
-      levels: this.parseKeywordDifficultyLevelsValue(setting?.value),
+      levels: this.parseKeywordDifficultyLevelsValue(
+        await this.findAppSettingValue(KEYWORD_DIFFICULTY_LEVELS_SETTING_KEY),
+      ),
     };
   }
 
   async getKeywordVolumeThresholds(): Promise<KeywordVolumeThresholdsSettings> {
-    const setting = await (this.prisma as any).appSetting.findUnique({
-      where: {
-        key: KEYWORD_VOLUME_THRESHOLDS_SETTING_KEY,
-      },
-    });
-
-    return this.parseKeywordVolumeThresholdsValue(setting?.value);
+    return this.parseKeywordVolumeThresholdsValue(
+      await this.findAppSettingValue(KEYWORD_VOLUME_THRESHOLDS_SETTING_KEY),
+    );
   }
 
   async getOpenAiCacheEntries(
@@ -359,14 +345,71 @@ export class SettingsService {
     return parsed;
   }
 
+  private async findAppSettingValue(key: string) {
+    try {
+      const setting = await (this.prisma as any).appSetting.findUnique({
+        where: { key },
+      });
+
+      return setting?.value?.trim() || null;
+    } catch (error) {
+      if (this.isMissingAppSettingTableError(error)) {
+        return null;
+      }
+
+      throw error;
+    }
+  }
+
+  private async safeUpsertAppSetting(key: string, value: string) {
+    try {
+      await (this.prisma as any).appSetting.upsert({
+        where: { key },
+        update: { value },
+        create: {
+          id: randomUUID(),
+          key,
+          value,
+        },
+      });
+    } catch (error) {
+      if (this.isMissingAppSettingTableError(error)) {
+        return;
+      }
+
+      throw error;
+    }
+  }
+
+  private isMissingAppSettingTableError(error: unknown) {
+    const candidate = error as {
+      code?: string;
+      message?: string;
+      meta?: {
+        driverAdapterError?: {
+          cause?: {
+            kind?: string;
+            table?: string;
+          };
+        };
+      };
+    };
+    const cause = candidate.meta?.driverAdapterError?.cause;
+
+    return (
+      candidate.code === 'P2021' ||
+      cause?.kind === 'TableDoesNotExist' ||
+      cause?.table === 'public.appsetting' ||
+      candidate.message?.includes('relation "public.appsetting" does not exist') ||
+      candidate.message?.includes('public.appsetting does not exist')
+    );
+  }
+
   async getPreferredAuthorProfile(user: SupabaseAuthenticatedUser | null) {
     const authenticatedUser = this.requireSupabaseUser(user);
-    const setting = await (this.prisma as any).appSetting.findUnique({
-      where: {
-        key: this.getPreferredAuthorSettingKey(authenticatedUser.id),
-      },
-    });
-    const authorId = setting?.value?.trim() || null;
+    const authorId = await this.findAppSettingValue(
+      this.getPreferredAuthorSettingKey(authenticatedUser.id),
+    );
 
     if (!authorId) {
       return {
@@ -398,12 +441,9 @@ export class SettingsService {
 
   async getCurrentProject(user: SupabaseAuthenticatedUser | null) {
     const authenticatedUser = this.requireSupabaseUser(user);
-    const setting = await (this.prisma as any).appSetting.findUnique({
-      where: {
-        key: this.getCurrentProjectSettingKey(authenticatedUser.id),
-      },
-    });
-    const projectId = setting?.value?.trim() || null;
+    const projectId = await this.findAppSettingValue(
+      this.getCurrentProjectSettingKey(authenticatedUser.id),
+    );
 
     if (!projectId) {
       return {
@@ -417,19 +457,10 @@ export class SettingsService {
     );
 
     if (!project) {
-      await (this.prisma as any).appSetting.upsert({
-        where: {
-          key: this.getCurrentProjectSettingKey(authenticatedUser.id),
-        },
-        update: {
-          value: '',
-        },
-        create: {
-          id: randomUUID(),
-          key: this.getCurrentProjectSettingKey(authenticatedUser.id),
-          value: '',
-        },
-      });
+      await this.safeUpsertAppSetting(
+        this.getCurrentProjectSettingKey(authenticatedUser.id),
+        '',
+      );
 
       return {
         project: null,
@@ -888,24 +919,16 @@ export class SettingsService {
 
     const [legacySprintSetting, legacySprintClusterSetting] = await Promise.all(
       [
-        (this.prisma as any).appSetting.findUnique({
-          where: {
-            key: CURRENT_SPRINT_SETTING_KEY,
-          },
-        }),
-        (this.prisma as any).appSetting.findUnique({
-          where: {
-            key: CURRENT_SPRINT_CLUSTER_SETTING_KEY,
-          },
-        }),
+        this.findAppSettingValue(CURRENT_SPRINT_SETTING_KEY),
+        this.findAppSettingValue(CURRENT_SPRINT_CLUSTER_SETTING_KEY),
       ],
     );
 
     const legacySprint = this.parseLegacyCurrentSprintValue(
-      legacySprintSetting?.value ?? '',
+      legacySprintSetting ?? '',
     );
     const legacyClusterId =
-      legacySprintClusterSetting?.value?.trim() ||
+      legacySprintClusterSetting ||
       (await this.getLegacySprintClusterId());
     const startDateValue = legacySprint.startDate
       ? this.parseDateInput(legacySprint.startDate)
@@ -996,19 +1019,10 @@ export class SettingsService {
       });
     }
 
-    await (this.prisma as any).appSetting.upsert({
-      where: {
-        key: CURRENT_SPRINT_CLUSTER_SETTING_KEY,
-      },
-      update: {
-        value: clusterId ?? '',
-      },
-      create: {
-        id: randomUUID(),
-        key: CURRENT_SPRINT_CLUSTER_SETTING_KEY,
-        value: clusterId ?? '',
-      },
-    });
+    await this.safeUpsertAppSetting(
+      CURRENT_SPRINT_CLUSTER_SETTING_KEY,
+      clusterId ?? '',
+    );
   }
 
   private serializeSprint(sprint: {
@@ -1223,7 +1237,7 @@ export class SettingsService {
     }
   }
 
-  private parseKeywordDifficultyLevelsValue(value?: string) {
+  private parseKeywordDifficultyLevelsValue(value?: string | null) {
     if (!value) {
       return this.getDefaultKeywordDifficultyLevels();
     }
@@ -1910,7 +1924,7 @@ export class SettingsService {
       return null;
     }
 
-    return Math.floor(diffMs / 86400000) + 1;
+    return Math.floor(diffMs / 8640000) + 1;
   }
 
   private normalizeOpenAiPromptTypeFilter(

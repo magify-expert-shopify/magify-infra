@@ -1858,13 +1858,6 @@ async function onPushToShopify() {
 
   try {
     const formattedContent = formatEditorHtml(editorHtml.value);
-    const currentVisibilityStatus = getArticleShopifyVisibilityStatus(article.value);
-    const nextStatus: BlogArticleStatus =
-      hadShopifyArticle &&
-      (currentVisibilityStatus === "PUBLISHED" ||
-        currentVisibilityStatus === "PLANNED")
-        ? currentVisibilityStatus
-        : "PUSHED";
     await updateArticleMetadata({
       title: title.value,
       content: formattedContent,
@@ -1877,7 +1870,7 @@ async function onPushToShopify() {
       videoYoutubeUrl: normalizeMetadataField(videoYoutubeUrl.value) || null,
       authorId: selectedAuthorId.value || null,
       shopifyBlogId: selectedShopifyBlogId.value || null,
-      status: nextStatus,
+      status: "PUSHED",
     });
     feedbackMessage.value = hadShopifyArticle
       ? "Article Shopify mis à jour."

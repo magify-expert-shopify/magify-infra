@@ -9,6 +9,13 @@ export function useApi() {
   const config = useRuntimeConfig();
   const { accessToken } = useSupabaseAuth();
   const { currentProject } = useCurrentProject();
+  const apiBaseUrl = computed(() =>
+    String(
+      import.meta.server
+        ? config.apiInternalUrl || config.public.apiUrl
+        : config.public.apiUrl || "http://localhost:4000",
+    ).replace(/\/+$/, ""),
+  );
 
   function isProjectScopedRequest(url: string) {
     return PROJECT_SCOPED_PREFIXES.some(
@@ -77,10 +84,7 @@ export function useApi() {
 
     const runRequest = (timeout: number) =>
       $fetch<T>(url, {
-        baseURL: String(config.public.apiUrl || "http://localhost:4000").replace(
-          /\/+$/,
-          "",
-        ),
+        baseURL: apiBaseUrl.value,
         query: nextQuery,
         timeout,
         onRequest(context) {

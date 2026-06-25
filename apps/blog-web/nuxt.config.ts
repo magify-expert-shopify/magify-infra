@@ -5,7 +5,7 @@ const appUrl =
   process.env.APP_URL?.trim() ||
   `http://localhost:${Number(process.env.PORT || 3000)}`;
 const appUrlObject = new URL(appUrl);
-const isDevProxyHost = appUrlObject.hostname.endsWith('.dev.magify.local');
+const isDevProxyHost = appUrlObject.hostname.endsWith(".dev.magify.local");
 const hmrClientPort = isDevProxyHost ? 80 : Number(process.env.PORT || 3000);
 
 console.info(`[blog-web] available at ${appUrl}`);
@@ -20,6 +20,8 @@ export default defineNuxtConfig({
 
   runtimeConfig: {
     supabaseSecretKey: process.env.SUPABASE_SECRET_KEY,
+    apiInternalUrl:
+      process.env.NUXT_API_INTERNAL_URL || "http://magify-blog-api-prod:4001",
     public: {
       apiUrl: process.env.NUXT_PUBLIC_API_URL || "http://localhost:4000",
       supabaseUrl: "https://dfbjmfcqulkhjvhbkdti.supabase.co",
@@ -37,12 +39,38 @@ export default defineNuxtConfig({
       allowedHosts: [appUrlObject.hostname],
       hmr: {
         host: appUrlObject.hostname,
-        protocol: appUrlObject.protocol === 'https:' ? 'wss' : 'ws',
+        protocol: appUrlObject.protocol === "https:" ? "wss" : "ws",
         clientPort: hmrClientPort,
       },
     },
     optimizeDeps: {
-      include: ["@vue/devtools-core", "@vue/devtools-kit"],
+      include: [
+        "@codemirror/commands",
+        "@codemirror/lang-html",
+        "@codemirror/language",
+        "@codemirror/state",
+        "@codemirror/view",
+
+        "@tiptap/core",
+        "@tiptap/extension-code-block",
+        "@tiptap/extension-color",
+        "@tiptap/extension-highlight",
+        "@tiptap/extension-image",
+        "@tiptap/extension-link",
+        "@tiptap/extension-placeholder",
+        "@tiptap/extension-table",
+        "@tiptap/extension-table-cell",
+        "@tiptap/extension-table-header",
+        "@tiptap/extension-table-row",
+        "@tiptap/extension-text-align",
+        "@tiptap/extension-text-style",
+        "@tiptap/extension-underline",
+        "@tiptap/pm/model",
+        "@tiptap/pm/state",
+        "@tiptap/pm/view",
+        "@tiptap/starter-kit",
+        "@tiptap/vue-3",
+      ],
     },
   },
 });

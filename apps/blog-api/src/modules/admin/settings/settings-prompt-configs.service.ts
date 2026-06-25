@@ -278,21 +278,17 @@ export class SettingsPromptConfigsService {
     }
 
     const legacyPromptSetting = legacyPromptKey
-      ? await (this.prisma as any).appSetting.findUnique({
-          where: { key: legacyPromptKey },
-        })
+      ? await this.findAppSettingValue(legacyPromptKey)
       : null;
     const legacyModelSetting = legacyModelKey
-      ? await (this.prisma as any).appSetting.findUnique({
-          where: { key: legacyModelKey },
-        })
+      ? await this.findAppSettingValue(legacyModelKey)
       : null;
 
     return {
       key: defaults.key,
-      model: legacyModelSetting?.value?.trim() || defaults.model,
+      model: legacyModelSetting || defaults.model,
       instructions: defaults.instructions,
-      input: legacyPromptSetting?.value?.trim() || defaults.input,
+      input: legacyPromptSetting || defaults.input,
       maxOutputTokens: defaults.maxOutputTokens,
     };
   }
@@ -368,5 +364,45 @@ export class SettingsPromptConfigsService {
     }
 
     return Math.max(1, Math.round(value));
+  }
+
+  private async findAppSettingValue(key: string) {
+    try {
+      const setting = await (this.prisma as any).appSetting.findUnique({
+        where: { key },
+      });
+
+      return setting?.value?.trim() || null;
+    } catch (error) {
+      if (this.isMissingAppSettingTableError(error)) {
+        return null;
+      }
+
+      throw error;
+    }
+  }
+
+  private isMissingAppSettingTableError(error: unknown) {
+    const candidate = error as {
+      code?: string;
+      message?: string;
+      meta?: {
+        driverAdapterError?: {
+          cause?: {
+            kind?: string;
+            table?: string;
+          };
+        };
+      };
+    };
+    const cause = candidate.meta?.driverAdapterError?.cause;
+
+    return (
+      candidate.code === 'P2021' ||
+      cause?.kind === 'TableDoesNotExist' ||
+      cause?.table === 'public.appsetting' ||
+      candidate.message?.includes('relation "public.appsetting" does not exist') ||
+      candidate.message?.includes('public.appsetting does not exist')
+    );
   }
 }

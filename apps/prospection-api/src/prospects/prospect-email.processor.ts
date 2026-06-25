@@ -17,8 +17,11 @@ export type ProspectEmailJobData = {
 };
 
 @Injectable()
-@Processor(PROSPECT_EMAIL_SEND_QUEUE, { concurrency: 1, lockDuration: 300000 })
-export class ProspectEmailProcessor extends WorkerHost implements OnApplicationBootstrap {
+@Processor(PROSPECT_EMAIL_SEND_QUEUE, { concurrency: 1, lockDuration: 30000 })
+export class ProspectEmailProcessor
+  extends WorkerHost
+  implements OnApplicationBootstrap
+{
   private readonly logger = new Logger(ProspectEmailProcessor.name);
 
   constructor(
@@ -30,10 +33,15 @@ export class ProspectEmailProcessor extends WorkerHost implements OnApplicationB
   }
 
   async onApplicationBootstrap() {
-    this.logger.log(`Worker "${PROSPECT_EMAIL_SEND_QUEUE}" prêt, en attente de la fenêtre d'envoi.`);
+    this.logger.log(
+      `Worker "${PROSPECT_EMAIL_SEND_QUEUE}" prêt, en attente de la fenêtre d'envoi.`,
+    );
   }
 
-  async cancelActiveJob(jobId: string, reason = 'Retiré manuellement de la file d’attente') {
+  async cancelActiveJob(
+    jobId: string,
+    reason = 'Retiré manuellement de la file d’attente',
+  ) {
     try {
       return await this.worker.cancelJob(jobId, reason);
     } catch {
@@ -41,12 +49,18 @@ export class ProspectEmailProcessor extends WorkerHost implements OnApplicationB
     }
   }
 
-  async process(job: Job<ProspectEmailJobData>, token?: string, signal?: AbortSignal) {
+  async process(
+    job: Job<ProspectEmailJobData>,
+    token?: string,
+    signal?: AbortSignal,
+  ) {
     const { prospectId, recipient, subject, body, text } = job.data;
-    const reservation = await this.prospectEmailScheduleService.reserveSendSlot();
+    const reservation =
+      await this.prospectEmailScheduleService.reserveSendSlot();
 
     if (!reservation.reserved) {
-      const nextAttemptAt = await this.prospectEmailScheduleService.getNextEligibleSendTimestamp();
+      const nextAttemptAt =
+        await this.prospectEmailScheduleService.getNextEligibleSendTimestamp();
 
       if (!token) {
         this.logger.warn(
@@ -68,7 +82,9 @@ export class ProspectEmailProcessor extends WorkerHost implements OnApplicationB
     }
 
     try {
-      const alreadySentRows = await this.prisma.$queryRawUnsafe<Array<{ first_contact_email_sent_at: string | null }>>(
+      const alreadySentRows = await this.prisma.$queryRawUnsafe<
+        Array<{ first_contact_email_sent_at: string | null }>
+      >(
         `
           SELECT "first_contact_email_sent_at"
           FROM "prospects"
@@ -80,7 +96,9 @@ export class ProspectEmailProcessor extends WorkerHost implements OnApplicationB
 
       if (alreadySentRows[0]?.first_contact_email_sent_at) {
         await this.prospectEmailScheduleService.releaseReservedSendSlot();
-        this.logger.log(`Email déjà envoyé pour le prospect #${prospectId}, envoi ignoré.`);
+        this.logger.log(
+          `Email déjà envoyé pour le prospect #${prospectId}, envoi ignoré.`,
+        );
         return { skipped: true, reason: 'already_sent' };
       }
 
@@ -97,7 +115,11 @@ export class ProspectEmailProcessor extends WorkerHost implements OnApplicationB
             signal.addEventListener(
               'abort',
               () => {
-                reject(new Error(`Cancelled: ${String(signal.reason || 'job cancelled')}`));
+                reject(
+                  new Error(
+                    `Cancelled: ${String(signal.reason || 'job cancelled')}`,
+                  ),
+                );
               },
               { once: true },
             );
@@ -135,18 +157,23 @@ export class ProspectEmailProcessor extends WorkerHost implements OnApplicationB
         prospectId,
       );
 
-      void this.prospectEmailScheduleService.completeReservedSendSlot().catch((error) => {
-        this.logger.error(
-          `Impossible de finaliser le créneau d’envoi pour le prospect #${prospectId}`,
-          error instanceof Error ? error.stack : undefined,
-        );
-      });
+      void this.prospectEmailScheduleService
+        .completeReservedSendSlot()
+        .catch((error) => {
+          this.logger.error(
+            `Impossible de finaliser le créneau d’envoi pour le prospect #${prospectId}`,
+            error instanceof Error ? error.stack : undefined,
+          );
+        });
 
       this.logger.log(`Email envoyé pour le prospect #${prospectId}.`);
 
       return { sent: true };
     } catch (error) {
-      if (signal?.aborted || (error instanceof Error && /abort/i.test(error.message))) {
+      if (
+        signal?.aborted ||
+        (error instanceof Error && /abort/i.test(error.message))
+      ) {
         await this.prospectEmailScheduleService.releaseReservedSendSlot();
         return { cancelled: true };
       }

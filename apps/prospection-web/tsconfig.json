@@ -1,5 +1,4 @@
 {
-  "extends": "../tsconfig.json",
   // https://nuxt.com/docs/guide/concepts/typescript
   "files": [],
   "references": [

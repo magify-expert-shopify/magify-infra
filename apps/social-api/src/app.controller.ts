@@ -10,6 +10,7 @@ export class AppController {
   @Header('Content-Type', 'text/html; charset=utf-8')
   async getApiInfo() {
     const appUrl = process.env.APP_URL?.trim() || 'http://localhost:3000';
+    const databaseUrl = this.maskDatabaseUrl(process.env.DATABASE_URL);
 
     const [database, redis] = await Promise.all([
       this.checkDatabase(),
@@ -27,6 +28,7 @@ export class AppController {
       api,
       database,
       redis,
+      databaseUrl,
     });
   }
 
@@ -113,6 +115,7 @@ export class AppController {
     api: { label: string; ok: boolean; detail: string };
     database: { label: string; ok: boolean; detail: string };
     redis: { label: string; ok: boolean; detail: string };
+    databaseUrl: string;
   }) {
     const row = (label: string, ok: boolean, detail: string) => `
       <div class="row">
@@ -278,6 +281,17 @@ export class AppController {
         ${row(input.redis.label, input.redis.ok, input.redis.detail)}
       </div>
 
+      <div class="section">
+        <div class="meta">Database connection</div>
+        <div class="row">
+          <div class="row-left">
+            <span class="dot ok"></span>
+            <strong>DATABASE_URL</strong>
+          </div>
+          <span class="detail">${this.escapeHtml(input.databaseUrl)}</span>
+        </div>
+      </div>
+
       <div class="footer">
         Environment: ${this.escapeHtml(process.env.NODE_ENV || 'unknown')} •
         Generated at ${this.escapeHtml(new Date().toISOString())}
@@ -294,5 +308,13 @@ export class AppController {
       .replaceAll('>', '&gt;')
       .replaceAll('"', '&quot;')
       .replaceAll("'", '&#39;');
+  }
+
+  private maskDatabaseUrl(databaseUrl?: string) {
+    if (!databaseUrl?.trim()) {
+      return 'undefined';
+    }
+
+    return databaseUrl.replace(/:\/\/([^:]+):([^@]+)@/, '://$1:***@');
   }
 }
