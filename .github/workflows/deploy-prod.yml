@@ -63,7 +63,7 @@ jobs:
           tags: ghcr.io/${{ env.OWNER }}/${{ matrix.package || matrix.image }}:latest
 
   deploy:
-    runs-on: [self-hosted, linux, arm64, raspberry]
+    runs-on: [self-hosted, linux, arm64, magify]
     needs: build
 
     steps:
