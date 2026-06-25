@@ -7,7 +7,7 @@ import {
 } from '@nestjs/common';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from 'generated/prisma/client';
-import { DATABASE_URL } from 'src/config/app.config';
+// import { DATABASE_URL } from 'src/config/app.config';
 
 @Injectable()
 export class PrismaService
@@ -17,13 +17,17 @@ export class PrismaService
   private readonly logger = new Logger(PrismaService.name);
 
   constructor() {
-    if (!DATABASE_URL) {
+    const databaseUrl = process.env.DATABASE_URL?.replace(/^"|"$/g, '').trim();
+
+    if (!databaseUrl) {
       throw new Error('DATABASE_URL is not defined');
     }
 
+    console.log(`Prisma database host: ${new URL(databaseUrl).hostname}`);
+
     super({
       adapter: new PrismaPg({
-        connectionString: DATABASE_URL,
+        connectionString: databaseUrl,
       }),
     });
   }
