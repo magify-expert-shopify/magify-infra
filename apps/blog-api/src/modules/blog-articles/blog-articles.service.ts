@@ -6,6 +6,7 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
+import { randomUUID } from 'crypto';
 import { PageType } from 'src/common/types/prisma-enums';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateBlogArticleIdeaDto } from './dto/create-blog-article-idea.dto';
@@ -105,6 +106,7 @@ export class BlogArticlesService {
 
     return (this.prisma as any).blogArticle.create({
       data: {
+        id: randomUUID(),
         projectId,
         title: normalizedTitle,
         status: 'IDEA',
@@ -115,6 +117,7 @@ export class BlogArticlesService {
   async createBlankArticle(projectId: string) {
     return (this.prisma as any).blogArticle.create({
       data: {
+        id: randomUUID(),
         projectId,
         title: 'Nouvel article',
         status: 'DRAFT',
@@ -730,6 +733,7 @@ export class BlogArticlesService {
     try {
       return await (this.prisma as any).blogArticle.create({
         data: {
+          id: randomUUID(),
           blogId: input.blogId,
           url: normalizedUrl,
           projectId: blogProjectId,
@@ -1043,6 +1047,10 @@ export class BlogArticlesService {
       nextTitle,
       existingArticle.id,
     );
+    const shouldSyncToShopify =
+      nextStatus === 'PUSHED' ||
+      nextStatus === 'PUBLISHED' ||
+      shouldScheduleOnShopify;
 
     let shopifyPublication: {
       id: string;
@@ -1053,15 +1061,19 @@ export class BlogArticlesService {
       } | null;
     } | null = null;
 
-    if (
-      nextStatus === 'PUSHED' ||
-      nextStatus === 'PUBLISHED' ||
-      shouldScheduleOnShopify
-    ) {
+    this.logger.log(
+      `[BlogArticles] update id=${existingArticle.id} status=${nextStatus} shopifyArticleId=${existingArticle.shopifyArticleId ?? 'none'} shopifyBlogId=${nextShopifyBlogId ?? 'default'} shouldSyncToShopify=${shouldSyncToShopify}`,
+    );
+
+    if (shouldSyncToShopify) {
       const author = await this.findAuthorOrFail(nextAuthorId);
       const publishedBodyHtml = this.buildPublishedBodyHtml(
         nextContent,
         normalizedScriptAssetUrls ?? existingArticle.scriptAssetUrls ?? [],
+      );
+
+      this.logger.log(
+        `[Shopify] sync-start articleId=${existingArticle.id} projectId=${existingArticle.projectId} status=${nextStatus} handle=${nextShopifyHandle} shopifyArticleId=${existingArticle.shopifyArticleId ?? 'none'} shopifyBlogId=${nextShopifyBlogId ?? 'default'}`,
       );
 
       shopifyPublication = await this.shopifyService.publishArticle({
@@ -1077,6 +1089,10 @@ export class BlogArticlesService {
         isPublished: nextStatus === 'PUBLISHED' && !shouldScheduleOnShopify,
         publishDate: shopifyPublishDate,
       });
+
+      this.logger.log(
+        `[Shopify] sync-done articleId=${existingArticle.id} projectId=${existingArticle.projectId} shopifyArticleId=${shopifyPublication.id} shopifyBlogId=${shopifyPublication.blog?.id ?? existingArticle.shopifyBlogId ?? 'default'} handle=${nextShopifyHandle}`,
+      );
     }
 
     const nextBlogHandle = await this.resolveBlogArticleBlogHandle({
@@ -1782,9 +1798,14 @@ export class BlogArticlesService {
     client: PrismaService | any,
     data: Record<string, unknown>,
   ) {
+    const articleData =
+      data && typeof data === 'object' && 'id' in data && data.id
+        ? data
+        : { id: randomUUID(), ...data };
+
     try {
       const article = await (client as any).blogArticle.create({
-        data,
+        data: articleData,
         include: blogArticleInclude,
       });
 
@@ -1797,7 +1818,7 @@ export class BlogArticlesService {
 
       this.isBlogArticleScriptAssetsTableAvailable = false;
       return (client as any).blogArticle.create({
-        data,
+        data: articleData,
         include: blogArticleIncludeWithoutScriptAssets,
       });
     }

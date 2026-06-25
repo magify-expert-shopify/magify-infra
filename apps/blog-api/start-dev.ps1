@@ -1,6 +1,6 @@
 param(
   [switch]$HostsOnly,
-  [string]$RaspberryHost = $(if ($env:RASPBERRY_HOST) { $env:RASPBERRY_HOST } else { '192.168.1.91' })
+  [string]$RaspberryHost = $(if ($env:RASPBERRY_HOST) { $env:RASPBERRY_HOST } else { '192.168.1.200' })
 )
 
 $ErrorActionPreference = 'Stop'

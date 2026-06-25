@@ -4,6 +4,7 @@ import {
   NotFoundException,
   Logger,
 } from '@nestjs/common';
+import { randomUUID } from 'crypto';
 import { PageStatus, PageType, SeoRole } from 'src/common/types/prisma-enums';
 import { PrismaService } from '../../prisma/prisma.service';
 import { BlogArticlesService } from '../blog-articles/blog-articles.service';
@@ -521,11 +522,13 @@ export class PagesService {
         }
 
         const url = await this.buildUniquePageUrl(slug, tx);
+        const projectId =
+          context.group.projectId ?? context.normalizedProjectId ?? null;
         const page = await (tx as any).page.create({
           data: {
-            projectId:
-              context.group.projectId ?? context.normalizedProjectId ?? null,
-            clusterId,
+            id: randomUUID(),
+            project: projectId ? { connect: { id: projectId } } : undefined,
+            seoCluster: clusterId ? { connect: { id: clusterId } } : undefined,
             title: articleTitle,
             slug,
             url,
@@ -658,11 +661,13 @@ export class PagesService {
         }
 
         const url = await this.buildUniquePageUrl(slug, tx);
+        const projectId =
+          context.group.projectId ?? context.normalizedProjectId ?? null;
         const page = await (tx as any).page.create({
           data: {
-            projectId:
-              context.group.projectId ?? context.normalizedProjectId ?? null,
-            clusterId,
+            id: randomUUID(),
+            project: projectId ? { connect: { id: projectId } } : undefined,
+            seoCluster: clusterId ? { connect: { id: clusterId } } : undefined,
             title: pageTitle,
             slug,
             url,
@@ -942,10 +947,13 @@ export class PagesService {
             },
           });
         } else {
+          const projectId =
+            normalizedProjectId ?? context.group.projectId ?? null;
           const createdPage = await (tx as any).page.create({
             data: {
-              projectId: normalizedProjectId,
-              clusterId,
+              id: randomUUID(),
+              project: projectId ? { connect: { id: projectId } } : undefined,
+              seoCluster: clusterId ? { connect: { id: clusterId } } : undefined,
               title: normalizedShopifyTitle,
               slug: normalizedShopifyHandle,
               url: shopifyPageUrl,
@@ -1473,11 +1481,14 @@ export class PagesService {
       existingArticle.url ?? null,
       articleSlug,
     );
+    const projectId = context.group.projectId ?? context.normalizedProjectId ?? null;
     const createdPage = await client.page.create({
       data: {
-        projectId:
-          context.group.projectId ?? context.normalizedProjectId ?? null,
-        clusterId: effectiveClusterId,
+        id: randomUUID(),
+        project: projectId ? { connect: { id: projectId } } : undefined,
+        seoCluster: effectiveClusterId
+          ? { connect: { id: effectiveClusterId } }
+          : undefined,
         title: existingArticle.title,
         slug: articleSlug,
         url: pageUrl,
@@ -1615,9 +1626,26 @@ export class PagesService {
         plan: input.plan,
       },
       create: {
-        keywordGroupId: input.keywordGroupId,
-        pageId: input.pageId ?? null,
-        projectId: input.projectId ?? null,
+        id: randomUUID(),
+        keywordGroup: {
+          connect: {
+            id: input.keywordGroupId,
+          },
+        },
+        page: input.pageId
+          ? {
+              connect: {
+                id: input.pageId,
+              },
+            }
+          : undefined,
+        project: input.projectId
+          ? {
+              connect: {
+                id: input.projectId,
+              },
+            }
+          : undefined,
         pageType: input.pageType,
         subjectExact: input.subjectExact,
         primaryKeyword: input.primaryKeyword,

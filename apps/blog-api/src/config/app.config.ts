@@ -2,7 +2,7 @@ export const BODY_SIZE_LIMIT = '5mb';
 
 export const ALLOWED_CORS_HOSTS = new Set([
   '192.168.1.129',
-  '192.168.1.91',
+  '192.168.1.200',
   'localhost',
   'blog.dev.magify.local',
   'blog.magify.local',

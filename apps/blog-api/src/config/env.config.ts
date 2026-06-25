@@ -4,7 +4,7 @@ export const ENV_FILE_PATH =
 // export const PORT = process.env.PORT ?? 3000;
 export const PORT = 4000;
 
-// export const BULLMQ_HOST = '192.168.1.91';
+// export const BULLMQ_HOST = '192.168.1.200';
 // export const BULLMQ_PORT = 6379;
 export const BULLMQ_HOST =
   process.env.BULLMQ_HOST ?? process.env.REDIS_HOST ?? '127.0.0.1';

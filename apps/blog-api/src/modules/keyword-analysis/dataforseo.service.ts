@@ -242,6 +242,7 @@ export class DataForSeoService {
         expiresAt: new Date(now.getTime() + DATAFORSEO_DEFAULT_CACHE_TTL_MS),
       },
       create: {
+        id: cacheKey,
         endpoint: path,
         cacheKey,
         requestPayload: serializedPayload,

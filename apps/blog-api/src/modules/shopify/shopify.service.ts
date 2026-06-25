@@ -2,6 +2,7 @@ import {
   BadGatewayException,
   BadRequestException,
   Injectable,
+  Logger,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import {
@@ -52,6 +53,8 @@ type ShopifyConnectionPage<T> = {
 
 @Injectable()
 export class ShopifyService {
+  private readonly logger = new Logger(ShopifyService.name);
+
   constructor(
     private readonly shopifyAuthService: ShopifyAuthService,
     private readonly prisma: PrismaService,
@@ -73,8 +76,18 @@ export class ShopifyService {
     const normalizedShopifyArticleId = input.shopifyArticleId?.trim() || null;
 
     if (normalizedShopifyArticleId) {
+      this.logger.log({
+        event: 'shopify.article.update.started',
+        projectId: input.projectId,
+        shopifyArticleId: normalizedShopifyArticleId,
+        shopifyBlogId: input.shopifyBlogId?.trim() || null,
+        handle: input.handle,
+        isPublished: input.isPublished,
+        publishDate: input.publishDate?.trim() || null,
+      });
+
       try {
-        return await this.updateArticle({
+        const article = await this.updateArticle({
           projectId: input.projectId,
           shopifyArticleId: normalizedShopifyArticleId,
           shopifyBlogId: input.shopifyBlogId,
@@ -87,25 +100,81 @@ export class ShopifyService {
           isPublished: input.isPublished,
           publishDate: input.publishDate,
         });
+
+        this.logger.log({
+          event: 'shopify.article.update.succeeded',
+          projectId: input.projectId,
+          shopifyArticleId: article.id,
+          shopifyBlogId: article.blog?.id ?? null,
+          handle: article.handle,
+        });
+
+        return article;
       } catch (error) {
         if (!this.isMissingResourceError(error)) {
+          this.logger.error({
+            event: 'shopify.article.update.failed',
+            projectId: input.projectId,
+            shopifyArticleId: normalizedShopifyArticleId,
+            shopifyBlogId: input.shopifyBlogId?.trim() || null,
+            handle: input.handle,
+            error: error instanceof Error ? error.message : String(error),
+          });
           throw error;
         }
+
+        this.logger.warn({
+          event: 'shopify.article.update.missing_remote_article',
+          projectId: input.projectId,
+          shopifyArticleId: normalizedShopifyArticleId,
+          handle: input.handle,
+          fallback: 'create',
+        });
       }
     }
 
-    return this.createArticle({
+    this.logger.log({
+      event: 'shopify.article.create.started',
       projectId: input.projectId,
-      shopifyBlogId: input.shopifyBlogId,
-      title: input.title,
-      bodyHtml: input.bodyHtml,
+      shopifyBlogId: input.shopifyBlogId?.trim() || null,
       handle: input.handle,
-      authorName: input.authorName,
-      authorMetaobjectId: input.authorMetaobjectId,
-      videoYoutubeUrl: input.videoYoutubeUrl,
       isPublished: input.isPublished,
-      publishDate: input.publishDate,
+      publishDate: input.publishDate?.trim() || null,
     });
+
+    try {
+      const article = await this.createArticle({
+        projectId: input.projectId,
+        shopifyBlogId: input.shopifyBlogId,
+        title: input.title,
+        bodyHtml: input.bodyHtml,
+        handle: input.handle,
+        authorName: input.authorName,
+        authorMetaobjectId: input.authorMetaobjectId,
+        videoYoutubeUrl: input.videoYoutubeUrl,
+        isPublished: input.isPublished,
+        publishDate: input.publishDate,
+      });
+
+      this.logger.log({
+        event: 'shopify.article.create.succeeded',
+        projectId: input.projectId,
+        shopifyArticleId: article.id,
+        shopifyBlogId: article.blog?.id ?? null,
+        handle: article.handle,
+      });
+
+      return article;
+    } catch (error) {
+      this.logger.error({
+        event: 'shopify.article.create.failed',
+        projectId: input.projectId,
+        shopifyBlogId: input.shopifyBlogId?.trim() || null,
+        handle: input.handle,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      throw error;
+    }
   }
 
   async getBlogs(
