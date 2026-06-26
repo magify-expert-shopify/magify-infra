@@ -318,6 +318,19 @@ export class AppController {
         </div>
       </div>
 
+      <div class="section">
+        <div class="meta">Navigation</div>
+        <div class="row">
+          <div class="row-left">
+            <span class="dot ok"></span>
+            <strong>Dashboard</strong>
+          </div>
+          <a href="${this.escapeHtml(this.getDashboardUrl())}" target="_blank" rel="noreferrer">
+            Open dashboard
+          </a>
+        </div>
+      </div>
+
       <div class="footer">
         Environment: ${this.escapeHtml(process.env.NODE_ENV || 'unknown')} •
         Generated at ${this.escapeHtml(new Date().toISOString())}
@@ -342,5 +355,14 @@ export class AppController {
     }
 
     return databaseUrl.replace(/:\/\/([^:]+):([^@]+)@/, '://$1:***@');
+  }
+
+  private getDashboardUrl() {
+    return (
+      process.env.DASHBOARD_URL?.trim() ||
+      (process.env.NODE_ENV === 'production'
+        ? 'http://www.magify.local'
+        : 'http://www.dev.magify.local')
+    );
   }
 }
