@@ -46,11 +46,15 @@ source "$ENV_FILE"
 set +a
 
 ensure_network "$NETWORK_NAME"
-docker build \
-  --pull \
-  --file "$POSTGRES_DOCKERFILE" \
-  --tag "$POSTGRES_IMAGE_NAME" \
-  "$POSTGRES_BUILD_CONTEXT"
+docker_build_args=(--pull --file "$POSTGRES_DOCKERFILE" --tag "$POSTGRES_IMAGE_NAME")
+
+if [[ "${POSTGREE_NO_CACHE:-0}" == "1" ]]; then
+  docker_build_args+=(--no-cache)
+fi
+
+docker_build_args+=("$POSTGRES_BUILD_CONTEXT")
+
+docker build "${docker_build_args[@]}"
 
 remove_container_if_exists "magify-postgree"
 
