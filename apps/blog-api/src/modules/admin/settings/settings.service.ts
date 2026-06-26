@@ -600,19 +600,7 @@ export class SettingsService {
     const normalizedLevels = this.normalizeKeywordDifficultyLevels(levels);
     const value = JSON.stringify(normalizedLevels);
 
-    await (this.prisma as any).appSetting.upsert({
-      where: {
-        key: KEYWORD_DIFFICULTY_LEVELS_SETTING_KEY,
-      },
-      update: {
-        value,
-      },
-      create: {
-        id: randomUUID(),
-        key: KEYWORD_DIFFICULTY_LEVELS_SETTING_KEY,
-        value,
-      },
-    });
+    await this.safeUpsertAppSetting(KEYWORD_DIFFICULTY_LEVELS_SETTING_KEY, value);
 
     return {
       levels: normalizedLevels,
@@ -627,19 +615,7 @@ export class SettingsService {
     const normalizedThresholds = this.normalizeKeywordVolumeThresholds(input);
     const value = JSON.stringify(normalizedThresholds);
 
-    await (this.prisma as any).appSetting.upsert({
-      where: {
-        key: KEYWORD_VOLUME_THRESHOLDS_SETTING_KEY,
-      },
-      update: {
-        value,
-      },
-      create: {
-        id: randomUUID(),
-        key: KEYWORD_VOLUME_THRESHOLDS_SETTING_KEY,
-        value,
-      },
-    });
+    await this.safeUpsertAppSetting(KEYWORD_VOLUME_THRESHOLDS_SETTING_KEY, value);
 
     return normalizedThresholds;
   }
@@ -685,19 +661,10 @@ export class SettingsService {
   async updateBlogArticleFromSuggestionTone(tone: string) {
     const normalizedTone = tone.trim();
 
-    await (this.prisma as any).appSetting.upsert({
-      where: {
-        key: BLOG_ARTICLE_FROM_SUGGESTION_TONE_SETTING_KEY,
-      },
-      create: {
-        id: randomUUID(),
-        key: BLOG_ARTICLE_FROM_SUGGESTION_TONE_SETTING_KEY,
-        value: normalizedTone || DEFAULT_BLOG_ARTICLE_FROM_SUGGESTION_TONE,
-      },
-      update: {
-        value: normalizedTone || DEFAULT_BLOG_ARTICLE_FROM_SUGGESTION_TONE,
-      },
-    });
+    await this.safeUpsertAppSetting(
+      BLOG_ARTICLE_FROM_SUGGESTION_TONE_SETTING_KEY,
+      normalizedTone || DEFAULT_BLOG_ARTICLE_FROM_SUGGESTION_TONE,
+    );
 
     return this.getBlogArticleFromSuggestionTone();
   }
@@ -726,19 +693,10 @@ export class SettingsService {
       }
     }
 
-    await (this.prisma as any).appSetting.upsert({
-      where: {
-        key: this.getPreferredAuthorSettingKey(authenticatedUser.id),
-      },
-      update: {
-        value: normalizedAuthorId ?? '',
-      },
-      create: {
-        id: randomUUID(),
-        key: this.getPreferredAuthorSettingKey(authenticatedUser.id),
-        value: normalizedAuthorId ?? '',
-      },
-    });
+    await this.safeUpsertAppSetting(
+      this.getPreferredAuthorSettingKey(authenticatedUser.id),
+      normalizedAuthorId ?? '',
+    );
 
     return {
       authorId: normalizedAuthorId,
@@ -753,19 +711,10 @@ export class SettingsService {
     const normalizedProjectId = projectId?.trim() || null;
 
     if (!normalizedProjectId) {
-      await (this.prisma as any).appSetting.upsert({
-        where: {
-          key: this.getCurrentProjectSettingKey(authenticatedUser.id),
-        },
-        update: {
-          value: '',
-        },
-        create: {
-          id: randomUUID(),
-          key: this.getCurrentProjectSettingKey(authenticatedUser.id),
-          value: '',
-        },
-      });
+      await this.safeUpsertAppSetting(
+        this.getCurrentProjectSettingKey(authenticatedUser.id),
+        '',
+      );
 
       return {
         project: null,
@@ -781,19 +730,10 @@ export class SettingsService {
       throw new BadRequestException('Projet introuvable ou inaccessible.');
     }
 
-    await (this.prisma as any).appSetting.upsert({
-      where: {
-        key: this.getCurrentProjectSettingKey(authenticatedUser.id),
-      },
-      update: {
-        value: normalizedProjectId,
-      },
-      create: {
-        id: randomUUID(),
-        key: this.getCurrentProjectSettingKey(authenticatedUser.id),
-        value: normalizedProjectId,
-      },
-    });
+    await this.safeUpsertAppSetting(
+      this.getCurrentProjectSettingKey(authenticatedUser.id),
+      normalizedProjectId,
+    );
 
     return {
       project: this.serializeProjectSummary(project),
@@ -833,29 +773,45 @@ export class SettingsService {
     },
     keywords: string[],
   ): Promise<BusinessPositioningSettings> {
-    const createdKeywords = await this.prisma.$transaction(async (tx) => {
-      await (tx as any).appSetting.upsert({
-        where: {
-          key: BUSINESS_POSITIONING_SETTING_KEY,
-        },
-        update: {
-          value: JSON.stringify(normalizedAnswers),
-        },
-        create: {
-          id: randomUUID(),
-          key: BUSINESS_POSITIONING_SETTING_KEY,
-          value: JSON.stringify(normalizedAnswers),
-        },
+    try {
+      const createdKeywords = await this.prisma.$transaction(async (tx) => {
+        await (tx as any).appSetting.upsert({
+          where: {
+            key: BUSINESS_POSITIONING_SETTING_KEY,
+          },
+          update: {
+            value: JSON.stringify(normalizedAnswers),
+          },
+          create: {
+            id: randomUUID(),
+            key: BUSINESS_POSITIONING_SETTING_KEY,
+            value: JSON.stringify(normalizedAnswers),
+          },
+        });
+
+        return this.replaceBusinessPositioningKeywords(keywords, tx);
       });
 
-      return this.replaceBusinessPositioningKeywords(keywords, tx);
-    });
+      return {
+        ...normalizedAnswers,
+        keywords: createdKeywords,
+        isComplete: this.isBusinessPositioningComplete(normalizedAnswers),
+      };
+    } catch (error) {
+      if (!this.isMissingAppSettingTableError(error)) {
+        throw error;
+      }
 
-    return {
-      ...normalizedAnswers,
-      keywords: createdKeywords,
-      isComplete: this.isBusinessPositioningComplete(normalizedAnswers),
-    };
+      const createdKeywords = await this.replaceBusinessPositioningKeywords(
+        keywords,
+      );
+
+      return {
+        ...normalizedAnswers,
+        keywords: createdKeywords,
+        isComplete: this.isBusinessPositioningComplete(normalizedAnswers),
+      };
+    }
   }
 
   async updateSprintCluster(clusterId?: string | null) {

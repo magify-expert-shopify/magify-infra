@@ -158,19 +158,59 @@ export class GoogleAuthService {
   }
 
   private async upsertSetting(key: string, value: string) {
-    await (this.prisma as any).appSetting.upsert({
-      where: { key },
-      update: { value },
-      create: { id: randomUUID(), key, value },
-    });
+    try {
+      await (this.prisma as any).appSetting.upsert({
+        where: { key },
+        update: { value },
+        create: { id: randomUUID(), key, value },
+      });
+    } catch (error) {
+      if (this.isMissingAppSettingTableError(error)) {
+        return;
+      }
+
+      throw error;
+    }
   }
 
   private async getStoredSetting(key: string) {
-    const setting = await (this.prisma as any).appSetting.findUnique({
-      where: { key },
-    });
+    try {
+      const setting = await (this.prisma as any).appSetting.findUnique({
+        where: { key },
+      });
 
-    return setting?.value?.trim() || '';
+      return setting?.value?.trim() || '';
+    } catch (error) {
+      if (this.isMissingAppSettingTableError(error)) {
+        return '';
+      }
+
+      throw error;
+    }
+  }
+
+  private isMissingAppSettingTableError(error: unknown) {
+    const candidate = error as {
+      code?: string;
+      message?: string;
+      meta?: {
+        driverAdapterError?: {
+          cause?: {
+            kind?: string;
+            table?: string;
+          };
+        };
+      };
+    };
+    const cause = candidate.meta?.driverAdapterError?.cause;
+
+    return (
+      candidate.code === 'P2021' ||
+      cause?.kind === 'TableDoesNotExist' ||
+      cause?.table === 'public.appsetting' ||
+      candidate.message?.includes('relation "public.appsetting" does not exist') ||
+      candidate.message?.includes('public.appsetting does not exist')
+    );
   }
 
   private getPublicApiBaseUrl() {
