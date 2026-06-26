@@ -38,12 +38,6 @@ while IFS= read -r raw_line; do
   build_args+=(--build-arg "$name=${!name-}")
 done < "$ENV_FILE"
 
-echo "=== Build args ==="
-for arg in "${build_args[@]}"; do
-  echo "$arg"
-done
-echo "=================="
-
 docker build \
   -f "$REPO_ROOT/apps/blog-api/Dockerfile.prod" \
   "${build_args[@]}" \
