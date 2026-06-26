@@ -1,8 +1,11 @@
 *.db
 *.sqlite
 *.sqlite3
+infra/db/*.sql
 .env
 node_modules/
+package-lock.json
+.turbo/
 dist/
 build/
 logs/

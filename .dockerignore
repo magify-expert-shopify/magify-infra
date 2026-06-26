@@ -1,0 +1,30 @@
+# Git / local metadata
+.git
+.github
+.gitignore
+
+# Dependencies and build output
+**/node_modules
+**/dist
+**/coverage
+**/.turbo
+**/.next
+**/.nuxt
+**/.output
+**/*.tsbuildinfo
+
+# Local databases and runtime artifacts
+**/*.db
+**/*.sqlite
+**/*.sqlite3
+**/*.log
+**/tmp
+**/.temp
+
+# Environment files should stay out of the image
+.env
+.env.*
+**/.env
+**/.env.*
+!apps/**/.env.dev
+!apps/**/.env.prod
