@@ -8,7 +8,7 @@
     "lint": "turbo lint",
     "format": "prettier --write .",
     "reinstall": "powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/reinstall-dependencies.ps1",
-    "ssh:raspberry": "ssh -i ./infra/ssh/raspberry -o IdentitiesOnly=yes admin@192.168.1.11"
+    "ssh:raspberry": "ssh -i ./infra/ssh/raspberry -o IdentitiesOnly=yes admin@192.168.1.12"
   },
   "devDependencies": {
     "turbo": "^2.5.4",

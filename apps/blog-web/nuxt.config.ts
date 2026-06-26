@@ -19,11 +19,10 @@ export default defineNuxtConfig({
   devtools: { enabled: true },
 
   runtimeConfig: {
-    supabaseSecretKey: process.env.SUPABASE_SECRET_KEY,
-    apiInternalUrl:
-      process.env.NUXT_API_INTERNAL_URL || "http://magify-blog-api-prod:4001",
+    supabaseSecretKey: "",
+    apiInternalUrl: "http://magify-blog-api-prod:4001",
     public: {
-      apiUrl: process.env.NUXT_PUBLIC_API_URL || "http://localhost:4000",
+      apiUrl: "http://localhost:4000",
       supabaseUrl: "https://dfbjmfcqulkhjvhbkdti.supabase.co",
       supabaseAnonKey:
         "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRmYmptZmNxdWxraGp2aGJrZHRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ2MTIzMDIsImV4cCI6MjA5MDE4ODMwMn0.VHQF3iJLO6ynabcsi8GvZOddKOB7-mlHWM-ZVRGpyIU",

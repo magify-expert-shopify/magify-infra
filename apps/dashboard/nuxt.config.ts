@@ -4,10 +4,10 @@ export default defineNuxtConfig({
   devtools: { enabled: false },
   runtimeConfig: {
     public: {
-      dashboardBlogUrl: process.env.NUXT_PUBLIC_DASHBOARD_BLOG_URL || "http://blog.dev.magify.local",
-      dashboardProspectionUrl: process.env.NUXT_PUBLIC_DASHBOARD_PROSPECTION_URL || "http://prospection.dev.magify.local",
-      dashboardSocialUrl: process.env.NUXT_PUBLIC_DASHBOARD_SOCIAL_URL || "http://social.dev.magify.local",
-      dashboardProxyManagerUrl: process.env.NUXT_PUBLIC_DASHBOARD_PROXY_MANAGER_URL || "http://admin.dev.magify.local",
+      dashboardBlogUrl: "http://blog.dev.magify.local",
+      dashboardProspectionUrl: "http://prospection.dev.magify.local",
+      dashboardSocialUrl: "http://social.dev.magify.local",
+      dashboardProxyManagerUrl: "http://admin.dev.magify.local",
     },
   },
   app: {
