@@ -25,7 +25,5 @@ compose_args=(
   -f "$DB_COMPOSE_FILE"
 )
 
-"${compose_args[@]}" stop magify-postgree || true
-"${compose_args[@]}" rm -fsv magify-postgree || true
-docker volume rm magify-postgree-data || true
+"${compose_args[@]}" down -v --remove-orphans || true
 docker rmi -f magify-postgree:17 || true
