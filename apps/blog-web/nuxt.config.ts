@@ -20,7 +20,7 @@ export default defineNuxtConfig({
 
   runtimeConfig: {
     supabaseSecretKey: "",
-    apiInternalUrl: "http://magify-blog-api-prod:4001",
+    apiInternalUrl: "",
     public: {
       apiUrl: "http://localhost:4000",
       supabaseUrl: "https://dfbjmfcqulkhjvhbkdti.supabase.co",
