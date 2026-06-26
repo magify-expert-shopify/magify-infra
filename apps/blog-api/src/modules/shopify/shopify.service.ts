@@ -1693,6 +1693,23 @@ export class ShopifyService {
       });
     } catch (error) {
       const cause = error instanceof Error ? (error as any).cause : null;
+      this.logger.error({
+        event: 'shopify.graphql.request.failed',
+        storeDomain,
+        url: graphqlUrl,
+        error: error instanceof Error ? error.message : String(error),
+        cause: cause
+          ? {
+              name: cause.name ?? null,
+              code: cause.code ?? null,
+              errno: cause.errno ?? null,
+              syscall: cause.syscall ?? null,
+              address: cause.address ?? null,
+              port: cause.port ?? null,
+            }
+          : null,
+      });
+
       throw new BadGatewayException({
         message:
           'Impossible de contacter Shopify pour le moment. Vérifie la connexion de la boutique ou réessaie plus tard.',
@@ -1715,6 +1732,14 @@ export class ShopifyService {
       .catch(() => null)) as ShopifyGraphqlResponse<T> | null;
 
     if (!response.ok) {
+      this.logger.warn({
+        event: 'shopify.graphql.response.rejected',
+        storeDomain,
+        url: graphqlUrl,
+        status: response.status,
+        payload,
+      });
+
       throw new BadGatewayException({
         message:
           response.status === 404
@@ -1727,6 +1752,13 @@ export class ShopifyService {
     }
 
     if (payload?.errors?.length) {
+      this.logger.warn({
+        event: 'shopify.graphql.payload.errors',
+        storeDomain,
+        url: graphqlUrl,
+        errors: payload.errors,
+      });
+
       throw new BadGatewayException({
         message:
           'Shopify a renvoyé une erreur pendant la récupération des données. Réessaie dans quelques instants.',
@@ -1736,6 +1768,12 @@ export class ShopifyService {
     }
 
     if (!payload?.data) {
+      this.logger.warn({
+        event: 'shopify.graphql.payload.missing_data',
+        storeDomain,
+        url: graphqlUrl,
+      });
+
       throw new BadGatewayException({
         message:
           "Shopify n'a pas renvoyé de données exploitables. Réessaie dans quelques instants.",

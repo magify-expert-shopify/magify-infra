@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   Injectable,
+  Logger,
   ServiceUnavailableException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -13,6 +14,7 @@ import {
 
 @Injectable()
 export class ShopifyAuthService {
+  private readonly logger = new Logger(ShopifyAuthService.name);
   private readonly clientId: string;
   private readonly clientSecret: string;
   private readonly apiVersion: string;
@@ -82,6 +84,24 @@ export class ShopifyAuthService {
         }),
       });
     } catch (error) { 
+      const cause = error instanceof Error ? (error as any).cause : null;
+      this.logger.error({
+        event: 'shopify.oauth.request.failed',
+        storeDomain: normalizedStoreDomain,
+        url: oauthUrl,
+        error: error instanceof Error ? error.message : String(error),
+        cause: cause
+          ? {
+              name: cause.name ?? null,
+              code: cause.code ?? null,
+              errno: cause.errno ?? null,
+              syscall: cause.syscall ?? null,
+              address: cause.address ?? null,
+              port: cause.port ?? null,
+            }
+          : null,
+      });
+
       throw new BadRequestException({
         message: `Shopify OAuth request failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
         errorType: 'SHOPIFY_TOKEN_REQUEST_FAILED',
@@ -118,6 +138,16 @@ export class ShopifyAuthService {
         rawErrorCode,
         errorDetail,
       );
+
+      this.logger.warn({
+        event: 'shopify.oauth.request.rejected',
+        storeDomain: normalizedStoreDomain,
+        url: oauthUrl,
+        status: response.status,
+        errorType,
+        errorCode: rawErrorCode || null,
+        errorDetail,
+      });
 
       throw new BadRequestException({
         message: `Shopify token request failed with status ${response.status}: ${errorDetail}`,
