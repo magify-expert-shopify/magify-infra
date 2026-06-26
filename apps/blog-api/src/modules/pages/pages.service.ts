@@ -10,6 +10,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { BlogArticlesService } from '../blog-articles/blog-articles.service';
 import { BlogArticleSuggestionGenerationService } from '../blog-articles/blog-article-suggestion-generation.service';
 import { ShopifyService } from '../shopify/shopify.service';
+import { buildShopifyStoreDomain } from '../../common/utils/normalize.utils';
 import type {
   AssociateExistingPageInput,
   CreateFromSuggestionInput,
@@ -363,7 +364,9 @@ export class PagesService {
         shopifyStoreDomain: true,
       },
     });
-    const storeDomain = project?.shopifyStoreDomain?.trim() || '';
+    const storeDomain = buildShopifyStoreDomain(
+      project?.shopifyStoreDomain?.trim() || '',
+    );
 
     if (!storeDomain) {
       throw new BadRequestException(
@@ -1416,7 +1419,9 @@ export class PagesService {
         shopifyStoreDomain: true,
       },
     });
-    const storeDomain = project?.shopifyStoreDomain?.trim() || '';
+    const storeDomain = buildShopifyStoreDomain(
+      project?.shopifyStoreDomain?.trim() || '',
+    );
 
     if (!storeDomain) {
       return `/pages/${normalizedHandle}`;

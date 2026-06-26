@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { ShopifyService } from '../shopify/shopify.service';
-import { normalizeUrlWithoutProtocol } from '../../common/utils/normalize.utils';
+import { buildShopifyStoreDomain } from '../../common/utils/normalize.utils';
 import { deriveNameFromUrl, normalizeUrl } from '../../common/utils/url.util';
 import type {
   BlogArticleRelationSyncResult,
@@ -51,7 +51,7 @@ export class BlogsService {
       throw new NotFoundException('Projet introuvable.');
     }
 
-    const storeDomain = normalizeUrlWithoutProtocol(
+    const storeDomain = buildShopifyStoreDomain(
       project.shopifyStoreDomain ?? '',
     );
 
@@ -169,7 +169,7 @@ export class BlogsService {
       throw new NotFoundException('Projet introuvable.');
     }
 
-    const storeDomain = normalizeUrlWithoutProtocol(
+    const storeDomain = buildShopifyStoreDomain(
       project.shopifyStoreDomain ?? '',
     );
 

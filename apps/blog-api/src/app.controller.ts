@@ -2,6 +2,7 @@ import { Controller, Get, Header } from '@nestjs/common';
 import Redis from 'ioredis';
 import { PrismaService } from './prisma/prisma.service';
 import { BULLMQ_HOST, BULLMQ_PASSWORD, BULLMQ_PORT } from './config/env.config';
+import { ShopifyService } from './modules/shopify/shopify.service';
 
 type HealthCheck = {
   label: string;
@@ -12,6 +13,7 @@ type HealthCheck = {
 type ApiInfoResponse = {
   appUrl: string;
   api: HealthCheck;
+  shopify: HealthCheck;
   database: HealthCheck;
   redis: HealthCheck;
   databaseUrl: string;
@@ -21,7 +23,10 @@ type ApiInfoResponse = {
 
 @Controller()
 export class AppController {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly shopifyService: ShopifyService,
+  ) {}
 
   @Get()
   @Header('Content-Type', 'text/html; charset=utf-8')
@@ -55,6 +60,7 @@ export class AppController {
       this.checkDatabase(),
       this.checkRedis(),
     ]);
+    const shopify = await this.checkShopify();
 
     const api = {
       label: 'API',
@@ -65,6 +71,7 @@ export class AppController {
     return {
       appUrl,
       api,
+      shopify,
       database,
       redis,
       databaseUrl,
@@ -127,9 +134,58 @@ export class AppController {
     }
   }
 
+  private async checkShopify() {
+    try {
+      const project = await (this.prisma as any).project.findFirst({
+        where: {
+          shopifyStoreDomain: {
+            not: null,
+          },
+        },
+        select: {
+          id: true,
+          shopifyStoreDomain: true,
+        },
+        orderBy: {
+          updatedAt: 'desc',
+        },
+      });
+
+      const projectId = project?.id?.trim() || '';
+
+      if (!projectId || !project?.shopifyStoreDomain?.trim()) {
+        return {
+          label: 'Shopify',
+          ok: false,
+          detail: 'No project linked to Shopify',
+        };
+      }
+
+      const shop = await this.shopifyService.getShop(projectId);
+
+      return {
+        label: 'Shopify',
+        ok: true,
+        detail: shop?.name?.trim()
+          ? `Connected to ${shop.name.trim()}`
+          : 'Connected to Shopify',
+      };
+    } catch (error) {
+      return {
+        label: 'Shopify',
+        ok: false,
+        detail:
+          error instanceof Error && error.message
+            ? error.message
+            : 'Connection failed',
+      };
+    }
+  }
+
   private renderStatusPage(input: {
     appUrl: string;
     api: { label: string; ok: boolean; detail: string };
+    shopify: { label: string; ok: boolean; detail: string };
     database: { label: string; ok: boolean; detail: string };
     redis: { label: string; ok: boolean; detail: string };
     databaseUrl: string;
@@ -295,6 +351,7 @@ export class AppController {
       <div class="section">
         <div class="meta">Core services</div>
         ${row(input.api.label, input.api.ok, input.api.detail)}
+        ${row(input.shopify.label, input.shopify.ok, input.shopify.detail)}
         ${row(input.database.label, input.database.ok, input.database.detail)}
         ${row(input.redis.label, input.redis.ok, input.redis.detail)}
       </div>

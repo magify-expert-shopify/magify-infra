@@ -6,7 +6,10 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { URLSearchParams } from 'node:url';
 import { SHOPIFY_DEFAULT_API_VERSION } from './shopify.constants';
-import { normalizeUrlWithoutProtocol } from '../../common/utils/normalize.utils';
+import {
+  buildShopifyStoreDomain,
+  normalizeShopifyStoreHandle,
+} from '../../common/utils/normalize.utils';
 
 @Injectable()
 export class ShopifyAuthService {
@@ -43,7 +46,7 @@ export class ShopifyAuthService {
     this.assertConfigured();
     const normalizedStoreDomain = this.normalizeStoreDomain(storeDomain);
 
-    return `https://${normalizedStoreDomain}/admin/api/${this.apiVersion}/graphql.json`;
+    return `https://${buildShopifyStoreDomain(normalizedStoreDomain)}/admin/api/${this.apiVersion}/graphql.json`;
   }
 
   async buildHeaders(storeDomain: string) {
@@ -134,7 +137,7 @@ export class ShopifyAuthService {
   }
 
   private buildOauthTokenUrl(storeDomain: string) {
-    return `https://${storeDomain}/admin/oauth/access_token`;
+    return `https://${buildShopifyStoreDomain(storeDomain)}/admin/oauth/access_token`;
   }
 
   private hasAuthenticationCredentials() {
@@ -152,7 +155,7 @@ export class ShopifyAuthService {
   }
 
   private normalizeStoreDomain(storeDomain: string) {
-    const normalizedStoreDomain = normalizeUrlWithoutProtocol(storeDomain);
+    const normalizedStoreDomain = normalizeShopifyStoreHandle(storeDomain);
 
     if (!normalizedStoreDomain) {
       throw new ServiceUnavailableException(

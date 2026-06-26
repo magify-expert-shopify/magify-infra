@@ -14,6 +14,7 @@ import { OpenAiPlatformService } from '../openai-platform/openai-platform.servic
 import { SeoClustersService } from '../seo-clusters/seo-clusters.service';
 import { UpdateBlogArticleDto } from './dto/update-blog-article.dto';
 import { ShopifyService } from '../shopify/shopify.service';
+import { buildShopifyStoreDomain } from '../../common/utils/normalize.utils';
 import {
   extractOpenAiText,
   parseStructuredOpenAiResponse,
@@ -1623,7 +1624,9 @@ export class BlogArticlesService {
         shopifyStoreDomain: true,
       },
     });
-    const storeDomain = project?.shopifyStoreDomain?.trim() || '';
+    const storeDomain = buildShopifyStoreDomain(
+      project?.shopifyStoreDomain?.trim() || '',
+    );
 
     if (!storeDomain) {
       return null;

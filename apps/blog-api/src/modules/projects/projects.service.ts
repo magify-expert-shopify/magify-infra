@@ -6,7 +6,9 @@ import {
 } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import { PrismaService } from '../../prisma/prisma.service';
-import { normalizeUrlWithoutProtocol } from '../../common/utils/normalize.utils';
+import {
+  normalizeShopifyStoreHandle,
+} from '../../common/utils/normalize.utils';
 import type { SupabaseAuthenticatedUser } from '../auth/supabase-auth/supabase-auth.types';
 
 @Injectable()
@@ -121,7 +123,7 @@ export class ProjectsService {
       throw new BadRequestException('Le nom du projet est requis.');
     }
 
-    const shopifyStoreDomain = normalizeUrlWithoutProtocol(
+    const shopifyStoreDomain = normalizeShopifyStoreHandle(
       input.shopifyStoreDomain ?? '',
     );
 
@@ -220,7 +222,7 @@ export class ProjectsService {
     }
 
     if (typeof input.shopifyStoreDomain !== 'undefined') {
-      const shopifyStoreDomain = normalizeUrlWithoutProtocol(
+      const shopifyStoreDomain = normalizeShopifyStoreHandle(
         input.shopifyStoreDomain ?? '',
       );
       updateData.shopifyStoreDomain = shopifyStoreDomain || null;
@@ -426,7 +428,8 @@ export class ProjectsService {
 
     return {
       ...project,
-      shopifyStoreDomain: project.shopifyStoreDomain ?? null,
+      shopifyStoreDomain:
+        normalizeShopifyStoreHandle(project.shopifyStoreDomain ?? '') || null,
       currentUserRole,
       canDelete: currentUserRole === 'admin',
       projectMembers: undefined,
