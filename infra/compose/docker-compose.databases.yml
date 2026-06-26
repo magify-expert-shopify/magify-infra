@@ -18,7 +18,8 @@ services:
       timeout: 5s
       retries: 10
     volumes:
-      - ../db/init/001-create-users-and-databases.sql:/docker-entrypoint-initdb.d/001-create-users-and-databases.sql:ro
+      - ../db/init/001-create-users.sql:/docker-entrypoint-initdb.d/001-create-users.sql:ro
+      - ../db/init/002-create-databases.sql:/docker-entrypoint-initdb.d/002-create-databases.sql:ro
       - magify-postgree-data:/var/lib/postgresql/data
     networks:
       - magify-network

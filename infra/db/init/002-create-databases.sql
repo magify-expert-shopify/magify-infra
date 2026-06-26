@@ -1,5 +1,3 @@
-CREATE ROLE magify LOGIN PASSWORD 'brunstad';
-
 CREATE DATABASE admin OWNER admin;
 CREATE DATABASE blog OWNER magify;
 CREATE DATABASE prospection OWNER magify;

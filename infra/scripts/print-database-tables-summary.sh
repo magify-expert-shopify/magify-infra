@@ -25,3 +25,26 @@ ORDER BY tablename;
 \echo
 SQL
 }
+
+print_database_users_summary() {
+  local database_name="$1"
+
+  echo
+  echo "Users visibles dans la base ${database_name}:"
+
+  docker exec -i \
+    -e PGPASSWORD="$POSTGRES_ADMIN_PASSWORD" \
+    magify-postgree \
+    psql -v ON_ERROR_STOP=1 -U "$POSTGRES_ADMIN_USER" -d "$database_name" -At <<'SQL'
+\echo
+SELECT
+  r.rolname AS role_name,
+  r.rolsuper AS is_superuser,
+  r.rolcreatedb AS can_create_db,
+  r.rolcreaterole AS can_create_role
+FROM pg_roles r
+WHERE r.rolname IN ('admin', 'magify')
+ORDER BY r.rolname;
+\echo
+SQL
+}
