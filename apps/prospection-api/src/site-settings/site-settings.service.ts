@@ -413,6 +413,33 @@ export class SiteSettingsService implements OnModuleInit {
     return rows[0]?.value ?? null;
   }
 
+  private isMissingSiteSettingsAccessError(error: unknown) {
+    const candidate = error as {
+      code?: string;
+      message?: string;
+      meta?: {
+        driverAdapterError?: {
+          cause?: {
+            kind?: string;
+            table?: string;
+          };
+        };
+      };
+    };
+    const cause = candidate.meta?.driverAdapterError?.cause;
+
+    return (
+      candidate.code === 'P2021' ||
+      candidate.code === 'P2010' ||
+      candidate.code === '42501' ||
+      cause?.kind === 'TableDoesNotExist' ||
+      cause?.table === 'public.site_settings' ||
+      candidate.message?.includes('permission denied for table site_settings') ||
+      candidate.message?.includes('relation "public.site_settings" does not exist') ||
+      candidate.message?.includes('public.site_settings does not exist')
+    );
+  }
+
   private async writeSiteSettingValue(key: string, value: string) {
     const safeKey = this.escapeSqlLiteral(key);
     const safeValue = this.escapeSqlLiteral(value);
@@ -859,20 +886,28 @@ export class SiteSettingsService implements OnModuleInit {
   }
 
   async getEmailSending(): Promise<EmailSendingResponse> {
-    await this.ensureSettingsTable();
+    try {
+      await this.ensureSettingsTable();
 
-    const storedValue = await this.readSiteSettingValue('email_sending');
+      const storedValue = await this.readSiteSettingValue('email_sending');
 
-    const stored = this.parseEmailSending(storedValue);
-    const normalized = this.normalizeEmailSending(stored);
-    const storedJson = JSON.stringify(stored);
-    const normalizedJson = JSON.stringify(normalized);
+      const stored = this.parseEmailSending(storedValue);
+      const normalized = this.normalizeEmailSending(stored);
+      const storedJson = JSON.stringify(stored);
+      const normalizedJson = JSON.stringify(normalized);
 
-    if (storedJson !== normalizedJson) {
-      await this.writeSiteSettingValue('email_sending', normalizedJson);
+      if (storedJson !== normalizedJson) {
+        await this.writeSiteSettingValue('email_sending', normalizedJson);
+      }
+
+      return normalized;
+    } catch (error) {
+      if (!this.isMissingSiteSettingsAccessError(error)) {
+        throw error;
+      }
+
+      return DEFAULT_EMAIL_SENDING;
     }
-
-    return normalized;
   }
 
   async updateEmailSending(value: Partial<EmailSendingSetting>): Promise<EmailSendingResponse> {

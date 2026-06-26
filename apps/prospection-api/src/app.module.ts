@@ -15,6 +15,7 @@ import { SiteSettingsModule } from './site-settings/site-settings.module';
 import { StatsModule } from './stats/stats.module';
 import { createBullMqConnection } from './queues/redis-connection';
 import { DiscordModule } from './discord/discord.module';
+import { CronModule } from './cron/cron.module';
 
 @Module({
   imports: [
@@ -37,6 +38,7 @@ import { DiscordModule } from './discord/discord.module';
     SiteSettingsModule,
     StatsModule,
     DiscordModule,
+    CronModule,
   ],
   controllers: [AppController],
   providers: [AppService],
