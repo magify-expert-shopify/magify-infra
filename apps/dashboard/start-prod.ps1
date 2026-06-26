@@ -2,7 +2,7 @@ param(
   [ValidateSet('Windows', 'Raspberry')]
   [string]$Target = 'Windows',
   [switch]$HostsOnly,
-  [string]$RaspberryHost = $(if ($env:RASPBERRY_HOST) { $env:RASPBERRY_HOST } else { '192.168.1.91' })
+  [string]$RaspberryHost = $(if ($env:RASPBERRY_HOST) { $env:RASPBERRY_HOST } else { '192.168.1.12' })
 )
 
 $ErrorActionPreference = 'Stop'
@@ -39,6 +39,9 @@ docker build -f (Join-Path $PSScriptRoot 'Dockerfile.prod') `
   --build-arg NUXT_PUBLIC_DASHBOARD_PROSPECTION_URL=$env:NUXT_PUBLIC_DASHBOARD_PROSPECTION_URL `
   --build-arg NUXT_PUBLIC_DASHBOARD_SOCIAL_URL=$env:NUXT_PUBLIC_DASHBOARD_SOCIAL_URL `
   --build-arg NUXT_PUBLIC_DASHBOARD_PROXY_MANAGER_URL=$env:NUXT_PUBLIC_DASHBOARD_PROXY_MANAGER_URL `
+  --build-arg NUXT_PUBLIC_DASHBOARD_BLOG_API_URL=$env:NUXT_PUBLIC_DASHBOARD_BLOG_API_URL `
+  --build-arg NUXT_PUBLIC_DASHBOARD_PROSPECTION_API_URL=$env:NUXT_PUBLIC_DASHBOARD_PROSPECTION_API_URL `
+  --build-arg NUXT_PUBLIC_DASHBOARD_SOCIAL_API_URL=$env:NUXT_PUBLIC_DASHBOARD_SOCIAL_API_URL `
   -t $imageName $repoRoot
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 

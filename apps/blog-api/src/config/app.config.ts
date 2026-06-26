@@ -4,6 +4,8 @@ export const ALLOWED_CORS_HOSTS = new Set([
   '192.168.1.129',
   '192.168.1.200',
   'localhost',
+  'www.dev.magify.local',
+  'www.magify.local',
   'blog.dev.magify.local',
   'blog.magify.local',
 ]);

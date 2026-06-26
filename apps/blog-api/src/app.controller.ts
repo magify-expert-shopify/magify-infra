@@ -3,6 +3,22 @@ import Redis from 'ioredis';
 import { PrismaService } from './prisma/prisma.service';
 import { BULLMQ_HOST, BULLMQ_PASSWORD, BULLMQ_PORT } from './config/env.config';
 
+type HealthCheck = {
+  label: string;
+  ok: boolean;
+  detail: string;
+};
+
+type ApiInfoResponse = {
+  appUrl: string;
+  api: HealthCheck;
+  database: HealthCheck;
+  redis: HealthCheck;
+  databaseUrl: string;
+  bullBoardUrl: string | null;
+  checkedAt: string;
+};
+
 @Controller()
 export class AppController {
   constructor(private readonly prisma: PrismaService) {}
@@ -10,6 +26,26 @@ export class AppController {
   @Get()
   @Header('Content-Type', 'text/html; charset=utf-8')
   async getApiInfo() {
+    const status = await this.buildApiInfo();
+    return this.renderStatusPage(status);
+  }
+
+  @Get('api-info')
+  async getApiInfoJson(): Promise<ApiInfoResponse> {
+    return this.buildApiInfo();
+  }
+
+  @Get('environment')
+  getEnvironment() {
+    return { ...process.env };
+  }
+
+  @Get('api/environment')
+  getApiEnvironment() {
+    return { ...process.env };
+  }
+
+  private async buildApiInfo(): Promise<ApiInfoResponse> {
     const appUrl = process.env.APP_URL?.trim() || 'http://localhost:4001';
     const bullBoardPath = process.env.BULL_BOARD_PATH || '/admin/queues';
     const bullBoardUrl = new URL(bullBoardPath, appUrl).toString();
@@ -26,24 +62,15 @@ export class AppController {
       detail: 'Online',
     };
 
-    return this.renderStatusPage({
+    return {
       appUrl,
       api,
       database,
       redis,
       databaseUrl,
       bullBoardUrl: redis.ok ? bullBoardUrl : null,
-    });
-  }
-
-  @Get('environment')
-  getEnvironment() {
-    return { ...process.env };
-  }
-
-  @Get('api/environment')
-  getApiEnvironment() {
-    return { ...process.env };
+      checkedAt: new Date().toISOString(),
+    };
   }
 
   private async checkDatabase() {

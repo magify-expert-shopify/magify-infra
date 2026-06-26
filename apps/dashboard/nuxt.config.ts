@@ -8,6 +8,9 @@ export default defineNuxtConfig({
       dashboardProspectionUrl: "http://prospection.dev.magify.local",
       dashboardSocialUrl: "http://social.dev.magify.local",
       dashboardProxyManagerUrl: "http://admin.dev.magify.local",
+      dashboardBlogApiUrl: "http://blog-api.dev.magify.local",
+      dashboardProspectionApiUrl: "http://prospection-api.dev.magify.local",
+      dashboardSocialApiUrl: "http://social-api.dev.magify.local",
     },
   },
   app: {
