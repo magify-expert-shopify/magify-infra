@@ -1673,6 +1673,7 @@ export class ShopifyService {
     variables?: ShopifyGraphqlVariables,
   ): Promise<T> {
     const trimmedQuery = query.trim();
+    const graphqlUrl = this.shopifyAuthService.buildGraphqlUrl(storeDomain);
 
     if (!trimmedQuery) {
       throw new BadRequestException('Shopify query is required.');
@@ -1681,18 +1682,17 @@ export class ShopifyService {
     let response: Response;
 
     try {
-      response = await fetch(
-        this.shopifyAuthService.buildGraphqlUrl(storeDomain),
-        {
-          method: 'POST',
-          headers: await this.shopifyAuthService.buildHeaders(storeDomain),
-          body: JSON.stringify({
-            query: trimmedQuery,
-            variables,
-          }),
-        },
-      );
+      const headers = await this.shopifyAuthService.buildHeaders(storeDomain);
+      response = await fetch(graphqlUrl, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          query: trimmedQuery,
+          variables,
+        }),
+      });
     } catch (error) {
+      const cause = error instanceof Error ? (error as any).cause : null;
       throw new BadGatewayException({
         message:
           'Impossible de contacter Shopify pour le moment. Vérifie la connexion de la boutique ou réessaie plus tard.',
@@ -1701,6 +1701,12 @@ export class ShopifyService {
           error instanceof Error
             ? error.message
             : 'Unknown Shopify fetch error',
+        ...(cause && typeof cause === 'object'
+          ? {
+              causeCode: (cause as { code?: string }).code ?? null,
+              causeName: (cause as { name?: string }).name ?? null,
+            }
+          : {}),
       });
     }
 

@@ -63,9 +63,11 @@ export class ShopifyAuthService {
       return cachedToken.token;
     }
 
-    const response = await fetch(
-      this.buildOauthTokenUrl(normalizedStoreDomain),
-      {
+    const oauthUrl = this.buildOauthTokenUrl(normalizedStoreDomain);
+    let response: Response;
+
+    try {
+      response = await fetch(oauthUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
@@ -75,8 +77,14 @@ export class ShopifyAuthService {
           client_id: this.clientId,
           client_secret: this.clientSecret,
         }),
-      },
-    );
+      });
+    } catch (error) { 
+      throw new BadRequestException({
+        message: `Shopify OAuth request failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        errorType: 'SHOPIFY_TOKEN_REQUEST_FAILED',
+        statusCode: null,
+      });
+    }
 
     const responseBodyText = await response.text().catch(() => '');
     const payload = this.safeParseJson(responseBodyText) as {
