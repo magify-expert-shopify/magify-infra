@@ -54,6 +54,7 @@ docker run -d \
   --restart unless-stopped \
   --network "$NETWORK_NAME" \
   --env-file "$ENV_FILE" \
+  -e NODE_OPTIONS="--max-old-space-size=4096" \
   "$IMAGE_NAME"
 
 echo "blog-web prod demarre."
