@@ -135,51 +135,72 @@ export class AppController {
   }
 
   private async checkShopify() {
-    try {
-      const project = await (this.prisma as any).project.findFirst({
-        where: {
-          shopifyStoreDomain: {
-            not: null,
-          },
+    const projects = await (this.prisma as any).project.findMany({
+      where: {
+        shopifyStoreDomain: {
+          not: null,
         },
-        select: {
-          id: true,
-          shopifyStoreDomain: true,
-        },
-        orderBy: {
-          updatedAt: 'desc',
-        },
-      });
+      },
+      select: {
+        id: true,
+        name: true,
+        shopifyStoreDomain: true,
+      },
+      orderBy: {
+        updatedAt: 'desc',
+      },
+    });
 
-      const projectId = project?.id?.trim() || '';
-
-      if (!projectId || !project?.shopifyStoreDomain?.trim()) {
-        return {
-          label: 'Shopify',
-          ok: false,
-          detail: 'No project linked to Shopify',
-        };
-      }
-
-      const shop = await this.shopifyService.getShop(projectId);
-
-      return {
-        label: 'Shopify',
-        ok: true,
-        detail: shop?.name?.trim()
-          ? `Connected to ${shop.name.trim()}`
-          : 'Connected to Shopify',
-      };
-    } catch (error) {
+    if (!projects.length) {
       return {
         label: 'Shopify',
         ok: false,
-        detail:
-          error instanceof Error && error.message
-            ? error.message
-            : 'Connection failed',
+        detail: 'No project linked to Shopify',
       };
     }
+
+    const failures: string[] = [];
+
+    for (const project of projects as Array<{
+      id: string;
+      name?: string | null;
+      shopifyStoreDomain?: string | null;
+    }>) {
+      const projectId = project.id?.trim() || '';
+      const storeDomain = project.shopifyStoreDomain?.trim() || '';
+
+      if (!projectId || !storeDomain) {
+        continue;
+      }
+
+      try {
+        const shop = await this.shopifyService.getShop(projectId);
+
+        return {
+          label: 'Shopify',
+          ok: true,
+          detail: shop?.name?.trim()
+            ? `Connected to ${shop.name.trim()} via ${project.name?.trim() || projectId}`
+            : `Connected to Shopify via ${project.name?.trim() || projectId}`,
+        };
+      } catch (error) {
+        const message =
+          error instanceof Error && error.message
+            ? error.message
+            : 'Connection failed';
+        failures.push(
+          `${project.name?.trim() || projectId}: ${message}`,
+        );
+      }
+    }
+
+    return {
+      label: 'Shopify',
+      ok: false,
+      detail:
+        failures[0] ||
+        'No Shopify store responded successfully with the current app installation',
+    };
   }
 
   private renderStatusPage(input: {
