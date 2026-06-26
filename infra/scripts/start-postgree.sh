@@ -11,6 +11,31 @@ POSTGRES_DOCKERFILE="$REPO_ROOT/infra/db/Dockerfile"
 POSTGRES_BUILD_CONTEXT="$REPO_ROOT/infra/db"
 NETWORK_NAME="magify-network"
 
+print_database_tables_summary() {
+  local database_name="$1"
+
+  echo
+  echo "Contenu de la base ${database_name}:"
+
+  docker exec -i \
+    -e PGPASSWORD="$POSTGRES_ADMIN_PASSWORD" \
+    magify-postgree \
+    psql -v ON_ERROR_STOP=1 -U "$POSTGRES_ADMIN_USER" -d "$database_name" -At <<'SQL'
+\echo
+SELECT format(
+  'SELECT %L AS table_name, count(*) AS row_count FROM %I.%I;',
+  tablename,
+  schemaname,
+  tablename
+)
+FROM pg_tables
+WHERE schemaname = 'public'
+ORDER BY tablename;
+\gexec
+\echo
+SQL
+}
+
 if [[ ! -f "$ENV_FILE" ]]; then
   echo "Fichier env introuvable: $ENV_FILE"
   exit 1
@@ -45,5 +70,9 @@ docker run -d \
   "$POSTGRES_IMAGE_NAME"
 
 wait_for_healthy "magify-postgree" 180
+
+print_database_tables_summary "${BLOG_POSTGRES_DB:-blog}"
+print_database_tables_summary "${PROSPECTION_POSTGRES_DB:-prospection}"
+print_database_tables_summary "${SOCIAL_POSTGRES_DB:-social}"
 
 echo "Container PostgreSQL demarre."
