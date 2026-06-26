@@ -1,6 +1,9 @@
 services:
   magify-postgree:
-    image: postgres:16-alpine
+    build:
+      context: ../db
+      dockerfile: Dockerfile
+    image: magify-postgree:17
     container_name: magify-postgree
     restart: unless-stopped
     ports:
