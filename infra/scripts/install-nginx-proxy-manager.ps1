@@ -175,26 +175,26 @@ server {
     ContainerName = $containerName
     ProxyHosts = if ($Instance -eq 'dev') {
       @(
-        @{ Name = 'www.dev.magify.local'; ForwardHost = 'magify-dashboard-dev'; ForwardPort = 80 },
-        @{ Name = 'admin.dev.magify.local'; ForwardHost = $containerName; ForwardPort = 81 },
-        @{ Name = 'db.dev.magify.local'; ForwardHost = 'host.docker.internal'; ForwardPort = 5050 },
-        @{ Name = 'blog.dev.magify.local'; ForwardHost = 'host.docker.internal'; ForwardPort = 3001 },
-        @{ Name = 'blog-api.dev.magify.local'; ForwardHost = 'host.docker.internal'; ForwardPort = 4001 },
-        @{ Name = 'prospection.dev.magify.local'; ForwardHost = 'host.docker.internal'; ForwardPort = 3002 },
-        @{ Name = 'prospection-api.dev.magify.local'; ForwardHost = 'host.docker.internal'; ForwardPort = 4002 },
-        @{ Name = 'social.dev.magify.local'; ForwardHost = 'host.docker.internal'; ForwardPort = 3003 },
-        @{ Name = 'social-api.dev.magify.local'; ForwardHost = 'host.docker.internal'; ForwardPort = 4003 }
+        @{ Name = 'www.dev.magify.duckdns.org'; ForwardHost = 'magify-dashboard-dev'; ForwardPort = 80 },
+        @{ Name = 'admin.dev.magify.duckdns.org'; ForwardHost = $containerName; ForwardPort = 81 },
+        @{ Name = 'db.dev.magify.duckdns.org'; ForwardHost = 'host.docker.internal'; ForwardPort = 5050 },
+        @{ Name = 'blog.dev.magify.duckdns.org'; ForwardHost = 'host.docker.internal'; ForwardPort = 3001 },
+        @{ Name = 'blog-api.dev.magify.duckdns.org'; ForwardHost = 'host.docker.internal'; ForwardPort = 4001 },
+        @{ Name = 'prospection.dev.magify.duckdns.org'; ForwardHost = 'host.docker.internal'; ForwardPort = 3002 },
+        @{ Name = 'prospection-api.dev.magify.duckdns.org'; ForwardHost = 'host.docker.internal'; ForwardPort = 4002 },
+        @{ Name = 'social.dev.magify.duckdns.org'; ForwardHost = 'host.docker.internal'; ForwardPort = 3003 },
+        @{ Name = 'social-api.dev.magify.duckdns.org'; ForwardHost = 'host.docker.internal'; ForwardPort = 4003 }
       )
     } else {
       @(
-        @{ Name = 'www.magify.local'; ForwardHost = 'magify-dashboard-prod'; ForwardPort = 80 },
-        @{ Name = 'admin.magify.local'; ForwardHost = $containerName; ForwardPort = 81 },
-        @{ Name = 'blog.magify.local'; ForwardHost = 'host.docker.internal'; ForwardPort = 3001 },
-        @{ Name = 'blog-api.magify.local'; ForwardHost = 'magify-blog-api-prod'; ForwardPort = 4001 },
-        @{ Name = 'prospection.magify.local'; ForwardHost = 'host.docker.internal'; ForwardPort = 3002 },
-        @{ Name = 'prospection-api.magify.local'; ForwardHost = 'magify-prospection-api-prod'; ForwardPort = 4002 },
-        @{ Name = 'social.magify.local'; ForwardHost = 'host.docker.internal'; ForwardPort = 3003 },
-        @{ Name = 'social-api.magify.local'; ForwardHost = 'magify-social-api-prod'; ForwardPort = 4003 }
+        @{ Name = 'www.magify.duckdns.org'; ForwardHost = 'magify-dashboard-prod'; ForwardPort = 80 },
+        @{ Name = 'admin.magify.duckdns.org'; ForwardHost = $containerName; ForwardPort = 81 },
+        @{ Name = 'blog.magify.duckdns.org'; ForwardHost = 'host.docker.internal'; ForwardPort = 3001 },
+        @{ Name = 'blog-api.magify.duckdns.org'; ForwardHost = 'blog-api'; ForwardPort = 4001 },
+        @{ Name = 'prospection.magify.duckdns.org'; ForwardHost = 'host.docker.internal'; ForwardPort = 3002 },
+        @{ Name = 'prospection-api.magify.duckdns.org'; ForwardHost = 'magify-prospection-api-prod'; ForwardPort = 4002 },
+        @{ Name = 'social.magify.duckdns.org'; ForwardHost = 'host.docker.internal'; ForwardPort = 3003 },
+        @{ Name = 'social-api.magify.duckdns.org'; ForwardHost = 'magify-social-api-prod'; ForwardPort = 4003 }
       )
     }
   }
@@ -257,14 +257,14 @@ networks:
     ApiBaseUrl = "http://${RaspberryHost}:$dashboardPort"
     ContainerName = $containerName
     ProxyHosts = @(
-      @{ Name = 'www.magify.local'; ForwardHost = 'dashboard'; ForwardPort = 80 },
-      @{ Name = 'admin.magify.local'; ForwardHost = $RaspberryHost; ForwardPort = 81 },
-      @{ Name = 'blog.magify.local'; ForwardHost = 'blog-web'; ForwardPort = 30000 },
-      @{ Name = 'blog-api.magify.local'; ForwardHost = 'blog-api'; ForwardPort = 30000 },
-      @{ Name = 'prospection.magify.local'; ForwardHost = 'prospection-web'; ForwardPort = 30000 },
-      @{ Name = 'prospection-api.magify.local'; ForwardHost = 'prospection-api'; ForwardPort = 30000 },
-      @{ Name = 'social.magify.local'; ForwardHost = 'social-web'; ForwardPort = 30000 },
-      @{ Name = 'social-api.magify.local'; ForwardHost = 'social-api'; ForwardPort = 30000 }
+      @{ Name = 'www.magify.duckdns.org'; ForwardHost = 'magify-dashboard'; ForwardPort = 80 },
+      @{ Name = 'admin.magify.duckdns.org'; ForwardHost = $RaspberryHost; ForwardPort = 81 },
+      @{ Name = 'blog.magify.duckdns.org'; ForwardHost = 'blog-web'; ForwardPort = 3000 },
+      @{ Name = 'blog-api.magify.duckdns.org'; ForwardHost = 'blog-api'; ForwardPort = 3000 },
+      @{ Name = 'prospection.magify.duckdns.org'; ForwardHost = 'prospection-web'; ForwardPort = 3000 },
+      @{ Name = 'prospection-api.magify.duckdns.org'; ForwardHost = 'prospection-api'; ForwardPort = 3000 },
+      @{ Name = 'social.magify.duckdns.org'; ForwardHost = 'social-web'; ForwardPort = 3000 },
+      @{ Name = 'social-api.magify.duckdns.org'; ForwardHost = 'social-api'; ForwardPort = 3000 }
     )
   }
 }

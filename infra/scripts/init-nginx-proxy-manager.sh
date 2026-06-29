@@ -24,13 +24,13 @@ if [[ -z "$token" ]]; then
   exit 1
 fi
 
-upsert_npm_proxy "http://127.0.0.1:81" "$token" "www.magify.local" "magify-dashboard" "80"
-upsert_npm_proxy "http://127.0.0.1:81" "$token" "admin.magify.local" "127.0.0.1" "81"
-upsert_npm_proxy "http://127.0.0.1:81" "$token" "blog.magify.local" "blog-web" "3001"
-upsert_npm_proxy "http://127.0.0.1:81" "$token" "blog-api.magify.local" "blog-api" "4001"
-upsert_npm_proxy "http://127.0.0.1:81" "$token" "prospection.magify.local" "prospection-web" "3002"
-upsert_npm_proxy "http://127.0.0.1:81" "$token" "prospection-api.magify.local" "prospection-api" "4002"
-upsert_npm_proxy "http://127.0.0.1:81" "$token" "social.magify.local" "social-web" "3003"
-upsert_npm_proxy "http://127.0.0.1:81" "$token" "social-api.magify.local" "social-api" "4003"
+upsert_npm_proxy "http://127.0.0.1:81" "$token" "www.magify.duckdns.org" "magify-dashboard" "80"
+upsert_npm_proxy "http://127.0.0.1:81" "$token" "admin.magify.duckdns.org" "127.0.0.1" "81"
+upsert_npm_proxy "http://127.0.0.1:81" "$token" "blog.magify.duckdns.org" "blog-web" "3001"
+upsert_npm_proxy "http://127.0.0.1:81" "$token" "blog-api.magify.duckdns.org" "blog-api" "4001"
+upsert_npm_proxy "http://127.0.0.1:81" "$token" "prospection.magify.duckdns.org" "prospection-web" "3002"
+upsert_npm_proxy "http://127.0.0.1:81" "$token" "prospection-api.magify.duckdns.org" "prospection-api" "4002"
+upsert_npm_proxy "http://127.0.0.1:81" "$token" "social.magify.duckdns.org" "social-web" "3003"
+upsert_npm_proxy "http://127.0.0.1:81" "$token" "social-api.magify.duckdns.org" "social-api" "4003"
 
 echo "Proxy prod NPM initialises."

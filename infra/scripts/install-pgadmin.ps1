@@ -1,11 +1,11 @@
 # install-pgadmin.ps1
 
-$RaspberryHost = "192.168.1.11"
+$RaspberryHost = "192.168.1.200"
 $RaspberryDbPort = "5432"
 $RaspberryDbName = "postgres"
 $RaspberryDbUser = "magify"
 $RaspberryDbPassword = "brunstad"
-$PgAdminHost = "db.dev.magify.local"
+$PgAdminHost = "db.dev.magify.duckdns.org"
 $PgAdminPort = "5050"
 
 $PgAdminEmail = "admin@magify.com"
