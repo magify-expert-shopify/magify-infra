@@ -4,7 +4,7 @@ $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 
 $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
-& (Join-Path $repoRoot 'infra\scripts\set-windows-host.ps1') -HostName 'www.dev.magify.local' -Address '127.0.0.1'
+& (Join-Path $repoRoot 'infra\scripts\set-windows-host.ps1') -HostName 'www.dev.magify.duckdns.org' -Address '127.0.0.1'
 if ($HostsOnly) { return }
 
 $envFile = Join-Path $PSScriptRoot '.env.dev'

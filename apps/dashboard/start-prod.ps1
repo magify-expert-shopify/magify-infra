@@ -10,7 +10,7 @@ Set-StrictMode -Version Latest
 
 $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
 $hostAddress = if ($Target -eq 'Windows') { '127.0.0.1' } else { $RaspberryHost }
-& (Join-Path $repoRoot 'infra\scripts\set-windows-host.ps1') -HostName 'www.magify.local' -Address $hostAddress
+& (Join-Path $repoRoot 'infra\scripts\set-windows-host.ps1') -HostName 'www.magify.duckdns.org' -Address $hostAddress
 
 if ($HostsOnly -or $Target -eq 'Raspberry') {
   if ($Target -eq 'Raspberry' -and -not $HostsOnly) {

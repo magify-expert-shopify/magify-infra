@@ -9,7 +9,7 @@ Set-StrictMode -Version Latest
 $appName = 'blog-web'
 $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
 if (-not $SkipHosts) {
-  & (Join-Path $repoRoot 'infra\scripts\set-windows-host.ps1') -HostName 'blog-web.magify.local' -Address '127.0.0.1'
+  & (Join-Path $repoRoot 'infra\scripts\set-windows-host.ps1') -HostName 'blog.magify.duckdns.org' -Address '127.0.0.1'
 }
 if ($HostsOnly) { return }
 

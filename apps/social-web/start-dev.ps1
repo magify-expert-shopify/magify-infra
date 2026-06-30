@@ -7,7 +7,7 @@ $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 
 $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
-& (Join-Path $repoRoot 'infra\scripts\set-windows-host.ps1') -HostName 'social.magify.local' -Address $RaspberryHost
+& (Join-Path $repoRoot 'infra\scripts\set-windows-host.ps1') -HostName 'social.magify.duckdns.org' -Address $RaspberryHost
 if ($HostsOnly) { return }
 
 & (Join-Path $repoRoot 'infra\scripts\load-dotenv.ps1') -Path (Join-Path $PSScriptRoot '.env.dev')

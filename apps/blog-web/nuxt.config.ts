@@ -5,7 +5,7 @@ const appUrl =
   process.env.APP_URL?.trim() ||
   `http://localhost:${Number(process.env.PORT || 3000)}`;
 const appUrlObject = new URL(appUrl);
-const isDevProxyHost = appUrlObject.hostname.endsWith(".dev.magify.local");
+const isDevProxyHost = appUrlObject.hostname.endsWith(".dev.magify.duckdns.org");
 const hmrClientPort = isDevProxyHost ? 80 : Number(process.env.PORT || 3000);
 
 console.info(`[blog-web] available at ${appUrl}`);

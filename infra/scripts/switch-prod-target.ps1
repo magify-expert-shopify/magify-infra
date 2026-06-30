@@ -42,15 +42,15 @@ if ($isDefaultHostsFile -and -not $isAdministrator) {
 
 $targetAddress = if ($Target -eq 'Windows') { '127.0.0.1' } else { $RaspberryHost }
 $domains = @(
-  'www.magify.local',
-  'admin.magify.local',
-  'db.magify.local',
-  'blog.magify.local',
-  'social.magify.local',
-  'prospection.magify.local',
-  'blog-api.magify.local',
-  'social-api.magify.local',
-  'prospection-api.magify.local'
+  'www.magify.duckdns.org',
+  'admin.magify.duckdns.org',
+  'db.magify.duckdns.org',
+  'blog.magify.duckdns.org',
+  'social.magify.duckdns.org',
+  'prospection.magify.duckdns.org',
+  'blog-api.magify.duckdns.org',
+  'social-api.magify.duckdns.org',
+  'prospection-api.magify.duckdns.org'
 )
 
 $hostUpdater = Join-Path $PSScriptRoot 'set-windows-host.ps1'

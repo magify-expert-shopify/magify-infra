@@ -26,10 +26,10 @@ services:
     env_file:
       - .env.prod
     environment:
-      APP_URL: http://blog.magify.local
+      APP_URL: http://blog.magify.duckdns.org
       NUXT_HOST: 0.0.0.0
       NUXT_PORT: 30000
-      NUXT_PUBLIC_API_URL: http://blog-api.magify.local
+      NUXT_PUBLIC_API_URL: http://blog-api.magify.duckdns.org
     networks:
       - magify-network
 
@@ -58,10 +58,10 @@ services:
     env_file:
       - .env.prod
     environment:
-      APP_URL: http://prospection.magify.local
+      APP_URL: http://prospection.magify.duckdns.org
       NUXT_HOST: 0.0.0.0
       NUXT_PORT: 30000
-      NUXT_PUBLIC_API_URL: http://prospection-api.magify.local
+      NUXT_PUBLIC_API_URL: http://prospection-api.magify.duckdns.org
     networks:
       - magify-network
 
@@ -90,10 +90,10 @@ services:
     env_file:
       - .env.prod
     environment:
-      APP_URL: http://social.magify.local
+      APP_URL: http://social.magify.duckdns.org
       NUXT_HOST: 0.0.0.0
       NUXT_PORT: 30000
-      NUXT_PUBLIC_API_URL: http://social-api.magify.local
+      NUXT_PUBLIC_API_URL: http://social-api.magify.duckdns.org
     networks:
       - magify-network
 

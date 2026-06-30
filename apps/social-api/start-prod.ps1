@@ -5,7 +5,7 @@ Set-StrictMode -Version Latest
 
 $appName = 'social-api'
 $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
-& (Join-Path $repoRoot 'infra\scripts\set-windows-host.ps1') -HostName 'social-api.magify.local' -Address '127.0.0.1'
+& (Join-Path $repoRoot 'infra\scripts\set-windows-host.ps1') -HostName 'social-api.magify.duckdns.org' -Address '127.0.0.1'
 if ($HostsOnly) { return }
 
 & (Join-Path $repoRoot 'infra\scripts\load-dotenv.ps1') -Path (Join-Path $PSScriptRoot '.env.prod')

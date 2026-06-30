@@ -379,8 +379,8 @@ export class AppController {
     return (
       process.env.DASHBOARD_URL?.trim() ||
       (process.env.NODE_ENV === 'production'
-        ? 'http://www.magify.local'
-        : 'http://www.dev.magify.local')
+        ? 'http://www.magify.duckdns.org'
+        : 'http://www.dev.magify.duckdns.org')
     );
   }
 }
