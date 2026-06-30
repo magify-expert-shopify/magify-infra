@@ -3,7 +3,11 @@ import { NestFactory } from '@nestjs/core';
 import { json, urlencoded } from 'express';
 import { AppModule } from './app.module';
 import { BigIntSerializerInterceptor } from './common/interceptors/bigint-serializer.interceptor';
-import { ALLOWED_CORS_HOSTS, BODY_SIZE_LIMIT } from './config/app.config';
+import {
+  ALLOWED_CORS_HOSTS,
+  ALLOWED_CORS_HOST_SUFFIXES,
+  BODY_SIZE_LIMIT,
+} from './config/app.config';
 import { PORT } from './config/env.config';
 import { BullBoardService } from './modules/queues/bullboard.service';
 
@@ -40,11 +44,13 @@ async function bootstrap() {
 
       try {
         const parsedOrigin = new URL(origin);
+        const { hostname, protocol } = parsedOrigin;
 
-        if (
-          ['http:', 'https:'].includes(parsedOrigin.protocol) &&
-          ALLOWED_CORS_HOSTS.has(parsedOrigin.hostname)
-        ) {
+        const isAllowedHost =
+          ALLOWED_CORS_HOSTS.has(hostname) ||
+          ALLOWED_CORS_HOST_SUFFIXES.some((suffix) => hostname.endsWith(suffix));
+
+        if (['http:', 'https:'].includes(protocol) && isAllowedHost) {
           callback(null, true);
           return;
         }
